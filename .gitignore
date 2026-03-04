@@ -41,6 +41,7 @@ coverage/
 
 # Generated documentation
 /doc/
+site/
 
 # Local builds
 dist/
