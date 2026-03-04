@@ -4,6 +4,11 @@
 
 ![Demo Image](gallery/image.png)
 
+<p>
+  <strong>Partnered by:</strong><br>
+  <img src="gallery/alacritty.png" alt="Alacritty Logo" width="110">
+</p>
+
 [![CI](https://github.com/pyratatui/pyratatui/actions/workflows/ci.yml/badge.svg)](https://github.com/pyratatui/pyratatui/actions)
 [![PyPI](https://img.shields.io/pypi/v/pyratatui.svg)](https://pypi.org/project/pyratatui/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
