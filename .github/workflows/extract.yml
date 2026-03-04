@@ -1,9 +1,7 @@
 name: Extract ZIP at Root and Commit
 
 on:
-  push:
-    paths:
-      - docs_build.zip
+  workflow_dispatch:  # manual trigger
 
 jobs:
   deploy-root-zip:
@@ -18,19 +16,16 @@ jobs:
       - name: Set up unzip
         run: sudo apt-get install -y unzip
 
-      - name: Remove old files from previous docs build
-        run: |
-          # Optionally, remove any previously extracted files if you know their names
-          # Or just keep it simple if the zip replaces everything
-
       - name: Extract docs_build.zip at repo root
         run: unzip -o docs_build.zip -d .
 
-      - name: Commit and push changes
+      - name: Commit and push changes using GH_PAGES_TOKEN
+        env:
+          GH_PAGES_TOKEN: ${{ secrets.GH_PAGES_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
           git rm docs_build.zip
           git commit -m "Extract docs_build.zip at root" || echo "No changes to commit"
-          git push origin main
+          git push https://x-access-token:${GH_PAGES_TOKEN}@github.com/${GITHUB_REPOSITORY}.git main
