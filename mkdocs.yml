@@ -1,5 +1,5 @@
 site_name: pyratatui
-site_description: Maturin and pyo3 powered efficient Python bindings for ratatui 0.29 + tachyonfx animations
+site_description: Python bindings for ratatui 0.29 + tachyonfx animations — fast, typed, idiomatic terminal UIs
 site_url: https://pyratatui.github.io/pyratatui
 repo_url: https://github.com/pyratatui/pyratatui
 repo_name: pyratatui/pyratatui
@@ -25,14 +25,18 @@ theme:
     - navigation.sections
     - navigation.expand
     - navigation.top
+    - navigation.instant
     - search.highlight
+    - search.suggest
     - content.code.copy
     - content.code.annotate
+    - content.tooltips
   icon:
     repo: fontawesome/brands/github
 
 plugins:
-  - search
+  - search:
+      separator: '[\s\-\.]+'
   - mkdocstrings:
       handlers:
         python:
@@ -40,36 +44,56 @@ plugins:
             show_source: true
             show_root_heading: true
             heading_level: 2
+            show_signature_annotations: true
+            separate_signature: true
 
 markdown_extensions:
   - admonition
   - pymdownx.details
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.highlight:
       anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.tabbed:
       alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - attr_list
   - tables
+  - toc:
+      permalink: true
 
 nav:
   - Home: index.md
   - Installation: installation.md
-  - Tutorial:
+  - Tutorials:
       - Quickstart: tutorial/quickstart.md
       - Async Updates: tutorial/async_updates.md
-      - Effect Workflow: tutorial/effect_workflow.md
       - Progress Bar: tutorial/progress_bar.md
+      - Tables & Lists: tutorial/table_updates.md
+      - TachyonFX Effects: tutorial/tachyonfx_effects.md
   - API Reference:
       - Terminal & Frame: reference/terminal.md
       - Layout: reference/layout.md
       - Widgets: reference/widgets.md
-      - Effects (TachyonFX): reference/effects.md
       - Style & Text: reference/style.md
+      - Effects (TachyonFX): reference/effects.md
+      - Buffer: reference/buffer.md
+  - Examples:
+      - Minimal Examples: examples/minimal_examples.md
+      - Advanced Examples: examples/advanced_examples.md
   - Build & Package:
       - Build Scripts: build/build_scripts.md
+      - Packaging: build/packaging.md
+  - FAQ: faq.md
 
 extra:
   social:

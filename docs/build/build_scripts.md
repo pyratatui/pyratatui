@@ -1,209 +1,212 @@
-# CI & Release System
-
-pyratatui uses a **manual release pipeline** powered by
-GitHub Actions.
-
-Releases are deterministic and versioned directly from `Cargo.toml`.
-
-There are **no tag-triggered builds** and no manual version input.
-
-The version source of truth is:
-
-```toml
-[package]
-version = "0.3.1"
-```
-
-The workflow reads this value using `cargo metadata` and uses it for:
-
-* GitHub Release tag (`v0.3.1`)
-* Wheel filenames
-* PyPI publish
-* SHA256 checksum file
-
-One source. Zero drift.
-
----
-
-# Release Flow
-
-## Step 1 — Bump Version
-
-Edit `Cargo.toml`:
-
-```toml
-version = "0.3.2"
-```
-
-Commit and push.
-
-## Step 2 — Run CI Manually
-
-Go to:
-
-```
-GitHub → Actions → CI → Run workflow
-```
-
-That’s it.
-
-The workflow will:
-
-1. Run Rust lint + tests
-2. Run Python lint + tests
-3. Build wheels (Linux, macOS, Windows)
-4. Generate `SHA256SUMS`
-5. Create a GitHub Release:
-
-   ```
-   v0.3.2
-   ```
-6. Upload:
-
-   * All `.whl` files
-   * `SHA256SUMS`
-7. Publish to PyPI
-
-No tagging required.
-No manual version entry.
-No duplication.
-
----
-
-# GitHub Release Artifacts
-
-Each release contains:
-
-* `*.whl` files (per OS/arch)
-* `SHA256SUMS`
-
-Users can verify integrity:
-
-```bash
-sha256sum -c SHA256SUMS
-```
-
-This ensures supply-chain integrity and reproducibility.
-
----
-
-# Cross-Platform Wheel Matrix
-
-| Platform          | Arch    | Python       | Built By       |
-| ----------------- | ------- | ------------ | -------------- |
-| Linux (manylinux) | x86_64  | 3.10+ (ABI3) | ubuntu-latest  |
-| macOS             | x86_64  | 3.10+ (ABI3) | macos-latest   |
-| macOS             | aarch64 | 3.10+ (ABI3) | macos-latest   |
-| Windows           | x86_64  | 3.10+ (ABI3) | windows-latest |
-
-Because wheels use ABI3, a single build per OS/arch supports Python 3.10+.
-
----
-
 # Build Scripts
 
-## `scripts/build.sh` (Linux / macOS)
+pyratatui is compiled with [Maturin](https://github.com/PyO3/maturin) — the standard tool for building PyO3-based Python extensions.
+
+---
+
+## Prerequisites
+
+| Tool | Purpose | Install |
+|---|---|---|
+| Rust 1.75+ | Compile the extension | `rustup update stable` |
+| Maturin | Build & package | `pip install maturin` |
+| Python 3.10+ | Runtime + build env | System package manager |
+
+---
+
+## Quick Build (Development)
 
 ```bash
-./scripts/build.sh          # Release wheel → dist/
-./scripts/build.sh --dev    # Editable install in current venv
-./scripts/build.sh --sdist  # Source distribution
+# 1. Clone the repo
+git clone https://github.com/pyratatui/pyratatui.git
+cd pyratatui
+
+# 2. Create a virtual environment
+python -m venv .venv
+source .venv/bin/activate   # Linux/macOS
+.venv\Scripts\activate      # Windows
+
+# 3. Install build dependencies
+pip install maturin
+
+# 4. Build and install in editable mode
+maturin develop              # debug build (fast compile)
+maturin develop --release    # optimized build (recommended)
 ```
 
-Requirements:
+After changing Rust source code, re-run `maturin develop` to recompile. Python-only changes (files under `python/`) are picked up immediately.
 
-* Rust stable
-* maturin
+---
 
-Install:
+## Build a Release Wheel
 
 ```bash
-rustup install stable
-pip install maturin
+maturin build --release
+```
+
+Output: `target/wheels/pyratatui-<version>-<platform>.whl`
+
+```bash
+# Install the built wheel
+pip install target/wheels/pyratatui-*.whl
 ```
 
 ---
 
-## `scripts/build.ps1` (Windows)
+## Linux Convenience Script
+
+```bash
+#!/usr/bin/env bash
+# scripts/build.sh
+set -euo pipefail
+
+echo "Building pyratatui..."
+maturin build --release --strip
+echo "Build complete. Wheel: target/wheels/"
+ls -lh target/wheels/
+```
+
+Run with:
+
+```bash
+bash scripts/build.sh
+```
+
+---
+
+## Windows Convenience Script
+
+```powershell
+# scripts/build.ps1
+Write-Host "Building pyratatui..."
+maturin build --release --strip
+Write-Host "Build complete."
+Get-ChildItem target/wheels/
+```
+
+Run with:
 
 ```powershell
 .\scripts\build.ps1
-.\scripts\build.ps1 --dev
-.\scripts\build.ps1 --sdist
 ```
 
 ---
 
-# Development Shortcut
+## Build Flags Reference
 
-Fastest local loop:
+| Flag | Description |
+|---|---|
+| `--release` | Enable Rust optimizations (strongly recommended for production) |
+| `--strip` | Strip debug symbols from the wheel (smaller file size) |
+| `--out <dir>` | Override wheel output directory |
+| `--target <triple>` | Cross-compile for a specific target (e.g. `aarch64-unknown-linux-gnu`) |
+| `-i python3.11` | Build for a specific Python interpreter |
+| `--zig` | Use Zig as the C linker (for better cross-compilation) |
+
+---
+
+## manylinux Wheels (PyPI-Compatible)
+
+Pre-built Linux wheels for PyPI must be compiled with manylinux to ensure broad compatibility. The easiest approach is to use Maturin's Docker images:
 
 ```bash
-pip install maturin
-maturin develop --release
+# Build a manylinux2014 wheel (x86_64)
+docker run --rm \
+  -v "$(pwd)":/io \
+  ghcr.io/pyo3/maturin \
+  build --release --strip --zig
 ```
 
-This compiles Rust and installs the extension into the active venv in-place.
+This produces a `*-manylinux_2_17_x86_64.manylinux2014_x86_64.whl` wheel installable on virtually all Linux systems.
 
 ---
 
-# Packaging Details
+## macOS Universal2 Wheels
 
-## ABI3 Wheels
+Build a single wheel that runs natively on both Intel and Apple Silicon:
 
-pyratatui ships ABI3-compatible wheels.
+```bash
+# Install both targets
+rustup target add x86_64-apple-darwin
+rustup target add aarch64-apple-darwin
 
-Relevant `pyproject.toml` section:
-
-```toml
-[tool.maturin]
-python-source = "python"
-module-name = "pyratatui._pyratatui"
-bindings = "pyo3"
-features = ["pyo3/extension-module"]
+# Build universal2
+maturin build --release --strip --target universal2-apple-darwin
 ```
 
-ABI3 ensures compatibility with Python 3.10+ without rebuilding per minor version.
+---
+
+## Cross-Compilation
+
+Build a Linux aarch64 wheel from a macOS host using Zig:
+
+```bash
+pip install maturin[zig]
+rustup target add aarch64-unknown-linux-gnu
+
+maturin build --release --strip \
+  --target aarch64-unknown-linux-gnu \
+  --zig
+```
 
 ---
 
-## Type Information
+## Running Tests
 
-The wheel includes:
+```bash
+# Rust unit tests
+cargo test
 
-* `pyratatui/__init__.pyi`
-* `py.typed`
-
-This ensures full PEP 561 compliance and proper IDE support.
-
----
-
-# Publishing Model
-
-Publishing is fully automated via the CI workflow.
-
-Manual steps like `twine upload` are not required.
-
-The pipeline:
-
-1. Builds wheels
-2. Creates GitHub Release
-3. Publishes to PyPI
-
-Only after tests pass.
+# Python integration tests
+pip install pytest
+pytest tests/
+```
 
 ---
 
-# Versioning
+## CI/CD with GitHub Actions
 
-pyratatui follows Semantic Versioning:
+The repository includes `.github/workflows/ci.yml`. Key jobs:
 
-* MAJOR → breaking changes
-* MINOR → new features
-* PATCH → fixes
+1. **lint** — `cargo clippy` and `cargo fmt --check`
+2. **test** — `cargo test` + `pytest`
+3. **build** — Matrix build across Linux, macOS, Windows for multiple Python versions
 
-There is no tag-based release trigger.
+To add automated PyPI publishing on tag, add a release job:
 
-The canonical version lives in `Cargo.toml`.
+```yaml
+# .github/workflows/release.yml
+name: Release
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: PyO3/maturin-action@v1
+        with:
+          command: publish
+          args: --skip-existing
+        env:
+          MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+```
 
 ---
+
+## Verify the Build
+
+```python
+import pyratatui
+print(pyratatui.__version__)           # e.g. "0.1.0"
+print(pyratatui.__ratatui_version__)   # "0.29"
+
+# Sanity check: run a no-display render
+from pyratatui import Buffer, Rect, Paragraph, Text
+
+buf  = Buffer(Rect(0, 0, 40, 5))
+# (widgets write into buf in tests via ratatui's stateless render)
+print("Build OK")
+```

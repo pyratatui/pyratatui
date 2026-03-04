@@ -1,88 +1,380 @@
-# Terminal Reference
+# Terminal & Frame Reference
+
+The `Terminal` and `Frame` classes form the heart of every pyratatui application. `Terminal` owns the screen, drives the render loop, and bridges keyboard events. `Frame` is passed to your draw callback each tick and provides all rendering methods.
+
+---
 
 ## Terminal
 
-The main driver class. Opens the terminal, enables raw mode, alternate screen.
-
 ```python
 from pyratatui import Terminal
-
-# Sync context manager
-with Terminal() as term:
-    term.draw(lambda frame: ...)
-    ev = term.poll_event(timeout_ms=100)
-    term.clear()
-    term.hide_cursor()
-    term.show_cursor()
-    area = term.area()
 ```
 
-### Methods
+`Terminal` wraps ratatui's `CrosstermBackend` and manages alternate-screen mode, raw input, and the draw cycle.
 
-| Method | Description |
-|--------|-------------|
-| `draw(fn)` | Call `fn(frame)` and flush the frame to the terminal |
-| `poll_event(timeout_ms=0)` | Poll for a `KeyEvent`. Returns `None` if no event. |
-| `area()` | Returns current terminal `Rect` |
-| `clear()` | Force full redraw next frame |
-| `hide_cursor()` | Hide the cursor |
-| `show_cursor()` | Show the cursor |
-| `restore()` | Restore terminal (called automatically by `__exit__`) |
+### Constructor
+
+```python
+Terminal()
+```
+
+Creates a new `Terminal` instance. The screen is **not** initialized until `__enter__` is called (via `with Terminal() as t:`).
+
+### Context Manager
+
+```python
+with Terminal() as term:
+    ...
+```
+
+`__enter__`:
+1. Enables raw terminal mode (`enable_raw_mode`)
+2. Enters alternate screen (`EnterAlternateScreen`)
+3. Initializes the crossterm backend
+
+`__exit__`:
+1. Disables raw mode
+2. Leaves alternate screen
+3. Suppresses `False` (does not swallow exceptions)
+
+!!! warning "Always Use as Context Manager"
+    Never call `Terminal()` without a `with` statement. If your code raises an exception, the context manager guarantees terminal restoration. Without it, your user's terminal may be left in raw mode with the alternate screen active.
+
+### `draw(draw_fn)`
+
+```python
+term.draw(lambda frame: ...)
+```
+
+Renders one frame by calling `draw_fn(frame)`. The `frame` object is only valid inside the callback — do not store references to it.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `draw_fn` | `Callable[[Frame], None]` | Function that renders widgets onto the frame |
+
+**Raises:** `BackendError` if the terminal is not initialized or the flush fails.
+
+### `poll_event(timeout_ms=0)`
+
+```python
+ev = term.poll_event(timeout_ms=100)
+```
+
+Polls for a keyboard event.
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `timeout_ms` | `int` | `0` | Milliseconds to wait (0 = non-blocking) |
+
+**Returns:** `KeyEvent` if a key was pressed during the timeout, otherwise `None`.
+
+Only `KeyEventKind::Press` events are returned — key-repeat and release events are filtered out.
+
+### `area()`
+
+```python
+rect = term.area()
+```
+
+**Returns:** `Rect` — the current terminal dimensions (updated on resize).
+
+**Raises:** `RuntimeError` if the terminal is not initialized.
+
+### `clear()`
+
+Forces a full repaint on the next `draw()` call. Use after a terminal resize event or when switching between large UI states.
+
+### `hide_cursor()` / `show_cursor()`
+
+```python
+term.hide_cursor()
+# ... rendering loop ...
+term.show_cursor()
+```
+
+Hides or shows the terminal cursor. Always call `show_cursor()` before exiting so the user's cursor is restored.
+
+### `restore()`
+
+```python
+term.restore()
+```
+
+Manually restore the terminal (disable raw mode, leave alternate screen). Called automatically by `__exit__`, but available for emergency cleanup.
+
+### Async Context Manager
+
+```python
+async with Terminal() as term:
+    ...
+```
+
+`__aenter__` and `__aexit__` provide the same behavior as the sync versions but in an async context. For typical async apps, prefer `AsyncTerminal` which handles frame pacing automatically.
+
+---
+
+## AsyncTerminal
+
+```python
+from pyratatui import AsyncTerminal
+```
+
+An asyncio-compatible wrapper around `Terminal`. All `Terminal` calls happen on the asyncio event-loop thread — never via thread-pool executors.
+
+### Async Context Manager
+
+```python
+async with AsyncTerminal() as term:
+    ...
+```
+
+Equivalent to entering and exiting `Terminal` synchronously on the main async thread.
+
+### `events(fps=30.0, *, stop_on_quit=True)`
+
+```python
+async for ev in term.events(fps=30):
+    term.draw(ui)
+    if ev:
+        handle(ev)
+```
+
+Async generator that drives the render loop:
+
+1. Non-blocking `poll_event(0)` on the main thread
+2. Yields `KeyEvent | None`
+3. `await asyncio.sleep(remaining_frame_time)` — yields to background coroutines
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `fps` | `float` | `30.0` | Target frames per second |
+| `stop_on_quit` | `bool` | `True` | Auto-stop on `q` or `Ctrl+C` |
+
+### `draw(draw_fn)` / `poll_event()` / `area()` / `clear()` / `hide_cursor()` / `show_cursor()`
+
+Same signatures as `Terminal` — these are thin wrappers that assert the terminal is active before delegating.
+
+---
 
 ## Frame
 
-Passed into your draw callback. Use it to render widgets.
+```python
+# Frame is never constructed directly — it arrives as the argument to draw_fn:
+def ui(frame: Frame):
+    ...
+```
+
+`Frame` is only valid **inside** the `draw_fn` callback. Storing a reference outside the callback and using it later is undefined behavior.
+
+### `area` (property)
 
 ```python
-def ui(frame):
-    area = frame.area           # Rect
-    frame.render_widget(widget, area)
-    frame.render_stateful_list(lst, area, state)
-    frame.render_stateful_table(tbl, area, state)
-    frame.render_stateful_scrollbar(sb, area, state)
+area: Rect = frame.area
 ```
+
+The full terminal area available for this frame. Equivalent to `frame.size`.
+
+### `size` (property)
+
+Alias for `area`.
+
+### `render_widget(widget, area)`
+
+```python
+frame.render_widget(widget, area)
+```
+
+Render a stateless widget into `area`.
+
+**Supported widget types:** `Block`, `Paragraph`, `Gauge`, `LineGauge`, `BarChart`, `Sparkline`, `Clear`, `Tabs`, `List` (stateless), `Table` (stateless).
+
+| Parameter | Type | Description |
+|---|---|---|
+| `widget` | widget object | Any supported widget instance |
+| `area` | `Rect` | Where to draw the widget |
+
+**Raises:** `RenderError` if the widget type is not recognized.
+
+### `render_stateful_list(widget, area, state)`
+
+```python
+frame.render_stateful_list(list_widget, area, list_state)
+```
+
+Render a `List` with mutable selection state. The state object is mutated in-place (scroll offset is updated to keep the selection visible).
+
+| Parameter | Type | Description |
+|---|---|---|
+| `widget` | `List` | The list widget |
+| `area` | `Rect` | Target area |
+| `state` | `ListState` | Mutable selection state |
+
+### `render_stateful_table(widget, area, state)`
+
+```python
+frame.render_stateful_table(table_widget, area, table_state)
+```
+
+Render a `Table` with mutable selection state.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `widget` | `Table` | The table widget |
+| `area` | `Rect` | Target area |
+| `state` | `TableState` | Mutable selection state |
+
+### `render_stateful_scrollbar(widget, area, state)`
+
+```python
+frame.render_stateful_scrollbar(scrollbar, area, scrollbar_state)
+```
+
+Render a `Scrollbar` with its scroll position state.
+
+### `apply_effect(effect, elapsed_ms, area)`
+
+```python
+frame.apply_effect(effect, elapsed_ms, area)
+```
+
+Apply a single TachyonFX `Effect` to the frame buffer. Call **after** all `render_widget` calls.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `effect` | `Effect` | The effect to advance and apply |
+| `elapsed_ms` | `int` | Wall-clock milliseconds since last frame |
+| `area` | `Rect` | Area of buffer cells to transform |
+
+### `apply_effect_manager(manager, elapsed_ms, area)`
+
+```python
+frame.apply_effect_manager(mgr, elapsed_ms, area)
+```
+
+Advance all effects in `mgr` and remove completed ones. Call **after** all `render_widget` calls.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `manager` | `EffectManager` | The effect manager to advance |
+| `elapsed_ms` | `int` | Wall-clock ms since last frame |
+| `area` | `Rect` | Area to apply effects to |
+
+---
 
 ## KeyEvent
 
-Returned by `term.poll_event()`.
+```python
+from pyratatui import KeyEvent
+```
+
+Returned by `Terminal.poll_event()` and `AsyncTerminal.poll_event()`.
+
+### Properties
+
+| Property | Type | Description |
+|---|---|---|
+| `code` | `str` | Key code string (see table below) |
+| `ctrl` | `bool` | Whether Ctrl was held |
+| `alt` | `bool` | Whether Alt was held |
+| `shift` | `bool` | Whether Shift was held |
+
+### Key Code Strings
+
+| Physical key | `code` value |
+|---|---|
+| Letter `a`–`z` | `"a"`–`"z"` |
+| Letter `A`–`Z` | `"A"`–`"Z"` |
+| Digits `0`–`9` | `"0"`–`"9"` |
+| Enter / Return | `"Enter"` |
+| Escape | `"Esc"` |
+| Backspace | `"Backspace"` |
+| Delete | `"Delete"` |
+| Tab | `"Tab"` |
+| Shift+Tab | `"BackTab"` |
+| Arrow Up | `"Up"` |
+| Arrow Down | `"Down"` |
+| Arrow Left | `"Left"` |
+| Arrow Right | `"Right"` |
+| Home | `"Home"` |
+| End | `"End"` |
+| Page Up | `"PageUp"` |
+| Page Down | `"PageDown"` |
+| Insert | `"Insert"` |
+| F1–F12 | `"F1"`–`"F12"` |
+| Space | `" "` |
+| Unknown | `"Unknown"` |
+
+### Example: Key Handling
 
 ```python
 ev = term.poll_event(timeout_ms=100)
 if ev:
-    ev.code    # str: "a", "Enter", "Esc", "Up", "Down", "F1", ...
-    ev.ctrl    # bool
-    ev.alt     # bool
-    ev.shift   # bool
+    if ev.code == "q":
+        running = False
+    elif ev.code == "c" and ev.ctrl:
+        running = False
+    elif ev.code == "Up":
+        state.select_previous()
+    elif ev.code == "Down":
+        state.select_next()
+    elif ev.code == "Enter":
+        confirm_selection()
+    elif ev.code == "F5":
+        refresh()
 ```
 
-## AsyncTerminal
+---
 
-Async context manager for asyncio applications.
+## Exception Hierarchy
+
+All pyratatui exceptions derive from `PyratatuiError`:
 
 ```python
-from pyratatui import AsyncTerminal
+from pyratatui import (
+    PyratatuiError,   # Base class
+    BackendError,     # Terminal I/O failures
+    LayoutError,      # Invalid layout constraints
+    RenderError,      # Unknown widget type
+    AsyncError,       # Async bridging errors
+    StyleError,       # Invalid style values
+)
 
-async with AsyncTerminal() as term:
-    async for ev in term.events(fps=30):
+try:
+    with Terminal() as term:
         term.draw(ui)
+except BackendError as e:
+    print(f"Terminal error: {e}")
+except PyratatuiError as e:
+    print(f"pyratatui error: {e}")
 ```
 
-### Events generator
+---
+
+## Helper Functions
+
+### `run_app(draw_fn, fps=30)`
 
 ```python
-async for ev in term.events(fps=30, stop_on_quit=True):
-    # ev: Optional[KeyEvent] — None on timer ticks, KeyEvent on key press
-    term.draw(ui)
+from pyratatui import run_app
+
+def my_ui(frame):
+    frame.render_widget(Paragraph.from_string("Hello!"), frame.area)
+
+run_app(my_ui, fps=30)
 ```
 
-## run_app / run_app_async
+Synchronous convenience wrapper: creates a `Terminal`, runs the draw loop at `fps`, quits on `q` or `Ctrl+C`.
+
+### `run_app_async(draw_fn, fps=30)`
 
 ```python
-from pyratatui import run_app, run_app_async
+from pyratatui import run_app_async
+import asyncio
 
-# Sync
-run_app(ui_fn, fps=30, on_key=lambda ev: ev.code == "q")
+async def my_ui(frame):
+    frame.render_widget(Paragraph.from_string("Async!"), frame.area)
 
-# Async
-await run_app_async(ui_fn, fps=30)
+asyncio.run(run_app_async(my_ui, fps=30))
 ```
+
+Async version using `AsyncTerminal`.
