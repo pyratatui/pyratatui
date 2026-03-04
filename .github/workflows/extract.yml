@@ -1,0 +1,36 @@
+name: Extract ZIP at Root and Commit
+
+on:
+  push:
+    paths:
+      - docs_build.zip
+
+jobs:
+  deploy-root-zip:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up unzip
+        run: sudo apt-get install -y unzip
+
+      - name: Remove old files from previous docs build
+        run: |
+          # Optionally, remove any previously extracted files if you know their names
+          # Or just keep it simple if the zip replaces everything
+
+      - name: Extract docs_build.zip at repo root
+        run: unzip -o docs_build.zip -d .
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git rm docs_build.zip
+          git commit -m "Extract docs_build.zip at root" || echo "No changes to commit"
+          git push origin main
