@@ -1,5 +1,5 @@
 """
-pyratatui — Python bindings for ratatui 0.30.0
+pyratatui — Python bindings for ratatui 0.29
 ===============================================
 
 A production-grade, Pythonic bridge to ratatui — Rust's high-performance

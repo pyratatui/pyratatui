@@ -35,7 +35,7 @@ fn _pyratatui(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // Top-level convenience re-exports.
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
-    m.add("__ratatui_version__", "0.30.0")?;
+    m.add("__ratatui_version__", "0.29")?;
 
     Ok(())
 }

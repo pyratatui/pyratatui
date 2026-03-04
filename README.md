@@ -1,6 +1,6 @@
 # pyratatui 🐀
 
-**Production-grade Python bindings for [ratatui](https://ratatui.rs) 0.30.0**
+**Production-grade Python bindings for [ratatui](https://ratatui.rs) 0.29**
 
 [![CI](https://github.com/pyratatui/pyratatui/actions/workflows/ci.yml/badge.svg)](https://github.com/pyratatui/pyratatui/actions)
 [![PyPI](https://img.shields.io/pypi/v/pyratatui.svg)](https://pypi.org/project/pyratatui/)
@@ -10,7 +10,7 @@
 pyratatui is a language bridge between Rust's high-performance terminal rendering engine
 and Python's ergonomic, productive ecosystem.
 
-- All rendering is native Rust via **ratatui 0.30.0**
+- All rendering is native Rust via **ratatui 0.29**
 - Python gets a fully **Pythonic API** — fluent builders, snake_case, type stubs
 - **Async ready** — `AsyncTerminal` integrates with asyncio seamlessly
 - **Zero Rustisms** in the public API

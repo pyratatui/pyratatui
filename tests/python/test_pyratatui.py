@@ -471,7 +471,7 @@ class TestVersion:
         import pyratatui
         assert hasattr(pyratatui, "__version__")
         assert hasattr(pyratatui, "__ratatui_version__")
-        assert pyratatui.__ratatui_version__ == "0.30.0"
+        assert pyratatui.__ratatui_version__ == "0.29"
 
     def test_public_api_complete(self):
         import pyratatui
