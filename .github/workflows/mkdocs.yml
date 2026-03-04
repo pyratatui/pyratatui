@@ -1,6 +1,5 @@
 name: Cloud MkDocs Deploy
 
-# Trigger manually or on pushes to main
 on:
   workflow_dispatch:
   push:
@@ -11,21 +10,21 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Check out the repository
+      # Step 1: Checkout repository
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      # Step 2: Set up Python
+      # Step 2: Setup Python
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
-      # Step 3: Install MkDocs + theme
-      - name: Install MkDocs
+      # Step 3: Install MkDocs 1.x + Material + mkdocstrings + extra extensions
+      - name: Install MkDocs + dependencies
         run: |
           pip install --upgrade pip
-          pip install mkdocs mkdocs-material
+          pip install "mkdocs<2.0" mkdocs-material==9.1.18 mkdocstrings pymdown-extensions
 
       # Step 4: Build the site
       - name: Build MkDocs site
