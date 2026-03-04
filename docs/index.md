@@ -21,7 +21,7 @@ Pythonic API, complete type stubs, async support, and CI-ready packaging.
 
 - **Native performance** — all rendering is done by Rust; Python just describes *what* to draw.
 - **Pythonic API** — fluent builders, snake_case names, no Rust concepts leaking through.
-- **Full ratatui 0.30 surface** — Block, Paragraph, List, Table, Gauge, LineGauge, BarChart, Sparkline, Scrollbar, Tabs, and more.
+- **Full ratatui 0.29 surface** — Block, Paragraph, List, Table, Gauge, LineGauge, BarChart, Sparkline, Scrollbar, Tabs, and more.
 - **Async ready** — `AsyncTerminal` + `run_app_async()` for asyncio event loops.
 - **Typed** — complete `.pyi` stubs bundled; works with mypy and pyright out of the box.
 - **ABI3 wheels** — one wheel per platform, compatible with Python 3.10+.
