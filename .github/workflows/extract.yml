@@ -1,20 +1,21 @@
 name: Extract ZIP at Root and Commit
 
 on:
-  workflow_dispatch: # Manual trigger
+  workflow_dispatch:
 
 jobs:
   deploy-root-zip:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout full repository
+      # 1️⃣ Checkout repo without persisting default token
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+          persist-credentials: false  # IMPORTANT: disables default GITHUB_TOKEN
 
-      # 2️⃣ Install unzip if not present
+      # 2️⃣ Install unzip
       - name: Install unzip
         run: sudo apt-get update && sudo apt-get install -y unzip
 
@@ -27,16 +28,14 @@ jobs:
         env:
           GH_PAGES_TOKEN: ${{ secrets.GH_PAGES_TOKEN }}
         run: |
-          # Configure git
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Stage everything and remove the zip
           git add .
           git rm -f docs_build.zip
 
           # Commit only if there are changes
           git diff-index --quiet HEAD || git commit -m "Extract docs_build.zip at root"
 
-          # Push using GH_PAGES_TOKEN
+          # Push using personal token
           git push https://x-access-token:${GH_PAGES_TOKEN}@github.com/${GITHUB_REPOSITORY}.git main
