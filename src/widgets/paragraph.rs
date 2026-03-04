@@ -2,11 +2,8 @@
 //! Python binding for the `Paragraph` widget.
 
 use pyo3::prelude::*;
-use ratatui::widgets::{
-    Paragraph as RParagraph,
-    Wrap,
-};
 use ratatui::layout::Alignment;
+use ratatui::widgets::{Paragraph as RParagraph, Wrap};
 
 use crate::style::Style;
 use crate::text::Text;
@@ -52,8 +49,8 @@ impl Paragraph {
         para = para.scroll((self.scroll_y, self.scroll_x));
         para = para.alignment(match self.alignment.as_str() {
             "center" => Alignment::Center,
-            "right"  => Alignment::Right,
-            _        => Alignment::Left,
+            "right" => Alignment::Right,
+            _ => Alignment::Left,
         });
         para
     }
@@ -121,12 +118,22 @@ impl Paragraph {
         p
     }
 
-    pub fn left_aligned(&self) -> Paragraph { self.alignment("left") }
-    pub fn centered(&self) -> Paragraph { self.alignment("center") }
-    pub fn right_aligned(&self) -> Paragraph { self.alignment("right") }
+    pub fn left_aligned(&self) -> Paragraph {
+        self.alignment("left")
+    }
+    pub fn centered(&self) -> Paragraph {
+        self.alignment("center")
+    }
+    pub fn right_aligned(&self) -> Paragraph {
+        self.alignment("right")
+    }
 
     fn __repr__(&self) -> String {
-        format!("Paragraph(lines={}, wrap={})", self.text.lines.len(), self.wrap)
+        format!(
+            "Paragraph(lines={}, wrap={})",
+            self.text.lines.len(),
+            self.wrap
+        )
     }
 }
 

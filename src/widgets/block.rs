@@ -2,13 +2,8 @@
 //! Python binding for the `Block` widget.
 
 use pyo3::prelude::*;
-use ratatui::widgets::{
-    Block as RBlock,
-    Borders,
-    BorderType as RBorderType,
-    Padding as RPadding,
-};
 use ratatui::layout::Alignment;
+use ratatui::widgets::{Block as RBlock, BorderType as RBorderType, Borders, Padding as RPadding};
 
 use crate::style::Style;
 
@@ -29,12 +24,12 @@ pub enum BorderType {
 impl BorderType {
     fn to_ratatui(&self) -> RBorderType {
         match self {
-            BorderType::Plain            => RBorderType::Plain,
-            BorderType::Rounded          => RBorderType::Rounded,
-            BorderType::Double           => RBorderType::Double,
-            BorderType::Thick            => RBorderType::Thick,
-            BorderType::QuadrantInside   => RBorderType::QuadrantInside,
-            BorderType::QuadrantOutside  => RBorderType::QuadrantOutside,
+            BorderType::Plain => RBorderType::Plain,
+            BorderType::Rounded => RBorderType::Rounded,
+            BorderType::Double => RBorderType::Double,
+            BorderType::Thick => RBorderType::Thick,
+            BorderType::QuadrantInside => RBorderType::QuadrantInside,
+            BorderType::QuadrantOutside => RBorderType::QuadrantOutside,
         }
     }
 }
@@ -57,7 +52,7 @@ impl BorderType {
 pub struct Block {
     title: Option<String>,
     title_bottom: Option<String>,
-    borders: u8,   // bit flags: 1=top, 2=right, 4=bottom, 8=left
+    borders: u8, // bit flags: 1=top, 2=right, 4=bottom, 8=left
     border_type: BorderType,
     style: Option<Style>,
     title_style: Option<Style>,
@@ -72,10 +67,18 @@ pub struct Block {
 impl Block {
     fn borders_flags(&self) -> Borders {
         let mut b = Borders::NONE;
-        if self.borders & 1 != 0 { b |= Borders::TOP; }
-        if self.borders & 2 != 0 { b |= Borders::RIGHT; }
-        if self.borders & 4 != 0 { b |= Borders::BOTTOM; }
-        if self.borders & 8 != 0 { b |= Borders::LEFT; }
+        if self.borders & 1 != 0 {
+            b |= Borders::TOP;
+        }
+        if self.borders & 2 != 0 {
+            b |= Borders::RIGHT;
+        }
+        if self.borders & 4 != 0 {
+            b |= Borders::BOTTOM;
+        }
+        if self.borders & 8 != 0 {
+            b |= Borders::LEFT;
+        }
         b
     }
 
@@ -93,8 +96,8 @@ impl Block {
         if let Some(ref t) = self.title {
             let align = match self.title_alignment.as_str() {
                 "center" => Alignment::Center,
-                "right"  => Alignment::Right,
-                _        => Alignment::Left,
+                "right" => Alignment::Right,
+                _ => Alignment::Left,
             };
             let line = if let Some(ref ts) = self.title_style {
                 ratatui::text::Line::from(ratatui::text::Span::styled(t.clone(), ts.inner))
@@ -167,10 +170,7 @@ impl Block {
     pub fn borders(&self, top: bool, right: bool, bottom: bool, left: bool) -> Block {
         let mut b = self.clone();
         b.borders =
-            (top    as u8)       |
-            ((right  as u8) << 1)|
-            ((bottom as u8) << 2)|
-            ((left   as u8) << 3);
+            (top as u8) | ((right as u8) << 1) | ((bottom as u8) << 2) | ((left as u8) << 3);
         b
     }
 
@@ -221,7 +221,10 @@ impl Block {
     }
 
     fn __repr__(&self) -> String {
-        format!("Block(title={:?}, borders=0b{:04b})", self.title, self.borders)
+        format!(
+            "Block(title={:?}, borders=0b{:04b})",
+            self.title, self.borders
+        )
     }
 }
 

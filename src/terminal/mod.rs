@@ -4,28 +4,24 @@
 //! This is the heart of pyratatui: `Terminal` owns the screen and drives the
 //! render loop; `Frame` is passed into the draw callback each tick.
 
-use pyo3::prelude::*;
 use pyo3::exceptions::PyRuntimeError;
+use pyo3::prelude::*;
 use std::io::{self, Stdout};
 
 use crossterm::{
+    event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     execute,
-    terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-    event::{self, Event, KeyCode, KeyEvent, KeyModifiers, KeyEventKind},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 
-use ratatui::{
-    backend::CrosstermBackend,
-    Terminal as RTerminal,
-    Frame as RFrame,
-};
+use ratatui::{backend::CrosstermBackend, Frame as RFrame, Terminal as RTerminal};
 
+use crate::effects::{Effect as PyEffect, EffectManager as PyEffectManager};
 use crate::errors::{io_err_to_py, render_err_to_py};
 use crate::layout::Rect;
-use crate::effects::{Effect as PyEffect, EffectManager as PyEffectManager};
 use crate::widgets::{
-    Block, Paragraph, List, ListState, Table, TableState,
-    Gauge, LineGauge, BarChart, Sparkline, Clear, Scrollbar, ScrollbarState, Tabs,
+    BarChart, Block, Clear, Gauge, LineGauge, List, ListState, Paragraph, Scrollbar,
+    ScrollbarState, Sparkline, Table, TableState, Tabs,
 };
 
 // ─── KeyEvent wrapper ─────────────────────────────────────────────────────────
@@ -50,33 +46,35 @@ pub struct PyKeyEvent {
 
 fn key_code_str(kc: &KeyCode) -> String {
     match kc {
-        KeyCode::Char(c)     => c.to_string(),
-        KeyCode::Enter       => "Enter".into(),
-        KeyCode::Esc         => "Esc".into(),
-        KeyCode::Backspace   => "Backspace".into(),
-        KeyCode::Delete      => "Delete".into(),
-        KeyCode::Tab         => "Tab".into(),
-        KeyCode::BackTab     => "BackTab".into(),
-        KeyCode::Up          => "Up".into(),
-        KeyCode::Down        => "Down".into(),
-        KeyCode::Left        => "Left".into(),
-        KeyCode::Right       => "Right".into(),
-        KeyCode::Home        => "Home".into(),
-        KeyCode::End         => "End".into(),
-        KeyCode::PageUp      => "PageUp".into(),
-        KeyCode::PageDown    => "PageDown".into(),
-        KeyCode::Insert      => "Insert".into(),
-        KeyCode::F(n)        => format!("F{}", n),
-        KeyCode::Null        => "Null".into(),
-        _                    => "Unknown".into(),
+        KeyCode::Char(c) => c.to_string(),
+        KeyCode::Enter => "Enter".into(),
+        KeyCode::Esc => "Esc".into(),
+        KeyCode::Backspace => "Backspace".into(),
+        KeyCode::Delete => "Delete".into(),
+        KeyCode::Tab => "Tab".into(),
+        KeyCode::BackTab => "BackTab".into(),
+        KeyCode::Up => "Up".into(),
+        KeyCode::Down => "Down".into(),
+        KeyCode::Left => "Left".into(),
+        KeyCode::Right => "Right".into(),
+        KeyCode::Home => "Home".into(),
+        KeyCode::End => "End".into(),
+        KeyCode::PageUp => "PageUp".into(),
+        KeyCode::PageDown => "PageDown".into(),
+        KeyCode::Insert => "Insert".into(),
+        KeyCode::F(n) => format!("F{}", n),
+        KeyCode::Null => "Null".into(),
+        _ => "Unknown".into(),
     }
 }
 
 #[pymethods]
 impl PyKeyEvent {
     fn __repr__(&self) -> String {
-        format!("KeyEvent(code={:?}, ctrl={}, alt={}, shift={})",
-            self.code, self.ctrl, self.alt, self.shift)
+        format!(
+            "KeyEvent(code={:?}, ctrl={}, alt={}, shift={})",
+            self.code, self.ctrl, self.alt, self.shift
+        )
     }
 }
 
@@ -118,12 +116,16 @@ impl Frame {
     /// The full terminal area available for this frame.
     #[getter]
     pub fn area(&mut self) -> Rect {
-        Rect { inner: self.get().area() }
+        Rect {
+            inner: self.get().area(),
+        }
     }
 
     /// The full terminal size (alias for `area`).
     #[getter]
-    pub fn size(&mut self) -> Rect { self.area() }
+    pub fn size(&mut self) -> Rect {
+        self.area()
+    }
 
     /// Render a widget into the given area.
     ///
@@ -164,7 +166,11 @@ impl Frame {
 
         Err(render_err_to_py(format!(
             "Unknown widget type: {}",
-            widget.get_type().qualname().map(|s| s.to_string()).unwrap_or_else(|_| "?".to_string())
+            widget
+                .get_type()
+                .qualname()
+                .map(|s| s.to_string())
+                .unwrap_or_else(|_| "?".to_string())
         )))
     }
 
@@ -175,7 +181,8 @@ impl Frame {
         area: &Rect,
         state: &mut ListState,
     ) -> PyResult<()> {
-        self.get().render_stateful_widget(widget.to_ratatui(), area.inner, &mut state.inner);
+        self.get()
+            .render_stateful_widget(widget.to_ratatui(), area.inner, &mut state.inner);
         Ok(())
     }
 
@@ -186,7 +193,8 @@ impl Frame {
         area: &Rect,
         state: &mut TableState,
     ) -> PyResult<()> {
-        self.get().render_stateful_widget(widget.to_ratatui(), area.inner, &mut state.inner);
+        self.get()
+            .render_stateful_widget(widget.to_ratatui(), area.inner, &mut state.inner);
         Ok(())
     }
 
@@ -197,19 +205,21 @@ impl Frame {
         area: &Rect,
         state: &mut ScrollbarState,
     ) -> PyResult<()> {
-        self.get().render_stateful_widget(widget.to_ratatui(), area.inner, &mut state.inner);
+        self.get()
+            .render_stateful_widget(widget.to_ratatui(), area.inner, &mut state.inner);
         Ok(())
     }
 
-    fn __repr__(&self) -> String { "Frame(<active>)".to_string() }
+    fn __repr__(&self) -> String {
+        "Frame(<active>)".to_string()
+    }
 
     /// Apply a TachyonFX `Effect` to this frame's buffer.
     ///
     /// Call **after** all `render_widget` calls — effects transform already-rendered cells.
     pub fn apply_effect(&mut self, effect: &mut PyEffect, elapsed_ms: u64, area: &Rect) {
         use tachyonfx::Shader;
-        let dur: tachyonfx::Duration =
-            std::time::Duration::from_millis(elapsed_ms).into();
+        let dur: tachyonfx::Duration = std::time::Duration::from_millis(elapsed_ms).into();
         let buf = unsafe { &mut *self.buffer_mut_ptr() };
         effect.inner.process(dur, buf, area.inner);
     }
@@ -292,7 +302,10 @@ impl Terminal {
     /// Call `__enter__` (or use `with Terminal() as t:`) to initialise.
     #[new]
     pub fn new() -> PyResult<Self> {
-        Ok(Self { inner: None, entered: false })
+        Ok(Self {
+            inner: None,
+            entered: false,
+        })
     }
 
     // ── Context manager ──────────────────────────────────────────────────────
@@ -351,7 +364,8 @@ impl Terminal {
                     let _ = draw_fn.call1((obj,));
                 }
             });
-        }).map_err(io_err_to_py)?;
+        })
+        .map_err(io_err_to_py)?;
 
         Ok(())
     }
@@ -370,11 +384,16 @@ impl Terminal {
         let timeout = std::time::Duration::from_millis(timeout_ms);
         if event::poll(timeout).map_err(io_err_to_py)? {
             match event::read().map_err(io_err_to_py)? {
-                Event::Key(KeyEvent { code, modifiers, kind: KeyEventKind::Press, .. }) => {
+                Event::Key(KeyEvent {
+                    code,
+                    modifiers,
+                    kind: KeyEventKind::Press,
+                    ..
+                }) => {
                     return Ok(Some(PyKeyEvent {
                         code: key_code_str(&code),
-                        ctrl:  modifiers.contains(KeyModifiers::CONTROL),
-                        alt:   modifiers.contains(KeyModifiers::ALT),
+                        ctrl: modifiers.contains(KeyModifiers::CONTROL),
+                        alt: modifiers.contains(KeyModifiers::ALT),
                         shift: modifiers.contains(KeyModifiers::SHIFT),
                     }));
                 }
@@ -388,40 +407,49 @@ impl Terminal {
 
     /// The current terminal area.
     pub fn area(&mut self) -> PyResult<Rect> {
-        let term = self.inner.as_mut().ok_or_else(|| {
-            PyRuntimeError::new_err("Terminal not initialised")
-        })?;
-        Ok(Rect { inner: term.get_frame().area() })
+        let term = self
+            .inner
+            .as_mut()
+            .ok_or_else(|| PyRuntimeError::new_err("Terminal not initialised"))?;
+        Ok(Rect {
+            inner: term.get_frame().area(),
+        })
     }
 
     /// Force a full redraw on the next `draw()` call.
     pub fn clear(&mut self) -> PyResult<()> {
-        let term = self.inner.as_mut().ok_or_else(|| {
-            PyRuntimeError::new_err("Terminal not initialised")
-        })?;
+        let term = self
+            .inner
+            .as_mut()
+            .ok_or_else(|| PyRuntimeError::new_err("Terminal not initialised"))?;
         term.clear().map_err(io_err_to_py)
     }
 
     /// Hide the cursor.
     pub fn hide_cursor(&mut self) -> PyResult<()> {
-        let term = self.inner.as_mut().ok_or_else(|| {
-            PyRuntimeError::new_err("Terminal not initialised")
-        })?;
+        let term = self
+            .inner
+            .as_mut()
+            .ok_or_else(|| PyRuntimeError::new_err("Terminal not initialised"))?;
         term.hide_cursor().map_err(io_err_to_py)
     }
 
     /// Show the cursor.
     pub fn show_cursor(&mut self) -> PyResult<()> {
-        let term = self.inner.as_mut().ok_or_else(|| {
-            PyRuntimeError::new_err("Terminal not initialised")
-        })?;
+        let term = self
+            .inner
+            .as_mut()
+            .ok_or_else(|| PyRuntimeError::new_err("Terminal not initialised"))?;
         term.show_cursor().map_err(io_err_to_py)
     }
 
     // ── Async helpers ─────────────────────────────────────────────────────────
 
     /// Async context manager entry (returns self).
-    pub fn __aenter__<'a>(mut slf: PyRefMut<'a, Self>, _py: Python<'_>) -> PyResult<PyRefMut<'a, Self>> {
+    pub fn __aenter__<'a>(
+        mut slf: PyRefMut<'a, Self>,
+        _py: Python<'_>,
+    ) -> PyResult<PyRefMut<'a, Self>> {
         enable_raw_mode().map_err(io_err_to_py)?;
         execute!(io::stdout(), EnterAlternateScreen).map_err(io_err_to_py)?;
         let backend = CrosstermBackend::new(io::stdout());

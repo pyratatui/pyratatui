@@ -12,12 +12,8 @@
 
 use pyo3::prelude::*;
 use ratatui::layout::{
-    Constraint as RConstraint,
-    Direction as RDirection,
-    Layout as RLayout,
-    Rect as RRect,
-    Margin as RMargin,
-    Alignment as RAlignment,
+    Alignment as RAlignment, Constraint as RConstraint, Direction as RDirection, Layout as RLayout,
+    Margin as RMargin, Rect as RRect,
 };
 
 use crate::errors::layout_err_to_py;
@@ -49,28 +45,63 @@ impl Rect {
     ///     height: Height in rows.
     #[new]
     pub fn new(x: u16, y: u16, width: u16, height: u16) -> Self {
-        Self { inner: RRect { x, y, width, height } }
+        Self {
+            inner: RRect {
+                x,
+                y,
+                width,
+                height,
+            },
+        }
     }
 
-    #[getter] pub fn x(&self) -> u16 { self.inner.x }
-    #[getter] pub fn y(&self) -> u16 { self.inner.y }
-    #[getter] pub fn width(&self) -> u16 { self.inner.width }
-    #[getter] pub fn height(&self) -> u16 { self.inner.height }
+    #[getter]
+    pub fn x(&self) -> u16 {
+        self.inner.x
+    }
+    #[getter]
+    pub fn y(&self) -> u16 {
+        self.inner.y
+    }
+    #[getter]
+    pub fn width(&self) -> u16 {
+        self.inner.width
+    }
+    #[getter]
+    pub fn height(&self) -> u16 {
+        self.inner.height
+    }
 
     /// The column just past the right edge.
-    #[getter] pub fn right(&self) -> u16 { self.inner.right() }
+    #[getter]
+    pub fn right(&self) -> u16 {
+        self.inner.right()
+    }
     /// The row just past the bottom edge.
-    #[getter] pub fn bottom(&self) -> u16 { self.inner.bottom() }
+    #[getter]
+    pub fn bottom(&self) -> u16 {
+        self.inner.bottom()
+    }
     /// The left column (alias for `x`).
-    #[getter] pub fn left(&self) -> u16 { self.inner.left() }
+    #[getter]
+    pub fn left(&self) -> u16 {
+        self.inner.left()
+    }
     /// The top row (alias for `y`).
-    #[getter] pub fn top(&self) -> u16 { self.inner.top() }
+    #[getter]
+    pub fn top(&self) -> u16 {
+        self.inner.top()
+    }
 
     /// Area in cells (width × height).
-    pub fn area(&self) -> u32 { self.inner.area() }
+    pub fn area(&self) -> u32 {
+        self.inner.area()
+    }
 
     /// Whether the area is zero.
-    pub fn is_empty(&self) -> bool { self.inner.is_empty() }
+    pub fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
 
     /// Return the rect shrunk by the given horizontal and vertical margins.
     ///
@@ -79,8 +110,13 @@ impl Rect {
     ///     vertical:   Rows to remove from top and bottom.
     #[pyo3(signature = (horizontal=1, vertical=1))]
     pub fn inner(&self, horizontal: u16, vertical: u16) -> Rect {
-        let margin = RMargin { horizontal, vertical };
-        Rect { inner: self.inner.inner(margin) }
+        let margin = RMargin {
+            horizontal,
+            vertical,
+        };
+        Rect {
+            inner: self.inner.inner(margin),
+        }
     }
 
     /// Return whether `other` is fully contained within `self`.
@@ -89,27 +125,37 @@ impl Rect {
         let o = other.inner;
         o.x >= s.x
             && o.y >= s.y
-            && (o.x + o.width)  <= (s.x + s.width)
+            && (o.x + o.width) <= (s.x + s.width)
             && (o.y + o.height) <= (s.y + s.height)
     }
 
     /// Return the intersection of `self` and `other`, or `None` if they don't overlap.
     pub fn intersection(&self, other: &Rect) -> Option<Rect> {
         let i = self.inner.intersection(other.inner);
-        if i.is_empty() { None } else { Some(Rect { inner: i }) }
+        if i.is_empty() {
+            None
+        } else {
+            Some(Rect { inner: i })
+        }
     }
 
     /// Return the union (bounding box) of `self` and `other`.
     pub fn union(&self, other: &Rect) -> Rect {
-        Rect { inner: self.inner.union(other.inner) }
+        Rect {
+            inner: self.inner.union(other.inner),
+        }
     }
 
     fn __repr__(&self) -> String {
-        format!("Rect(x={}, y={}, width={}, height={})",
-            self.inner.x, self.inner.y, self.inner.width, self.inner.height)
+        format!(
+            "Rect(x={}, y={}, width={}, height={})",
+            self.inner.x, self.inner.y, self.inner.width, self.inner.height
+        )
     }
 
-    fn __eq__(&self, other: &Rect) -> bool { self.inner == other.inner }
+    fn __eq__(&self, other: &Rect) -> bool {
+        self.inner == other.inner
+    }
 }
 
 // ─── Constraint ───────────────────────────────────────────────────────────────
@@ -135,24 +181,51 @@ pub struct Constraint {
 #[pymethods]
 impl Constraint {
     /// A fixed size in terminal cells.
-    #[staticmethod] pub fn length(n: u16) -> Self { Self { inner: RConstraint::Length(n) } }
+    #[staticmethod]
+    pub fn length(n: u16) -> Self {
+        Self {
+            inner: RConstraint::Length(n),
+        }
+    }
 
     /// A percentage of the parent area (0-100).
-    #[staticmethod] pub fn percentage(pct: u16) -> Self { Self { inner: RConstraint::Percentage(pct) } }
+    #[staticmethod]
+    pub fn percentage(pct: u16) -> Self {
+        Self {
+            inner: RConstraint::Percentage(pct),
+        }
+    }
 
     /// Fill remaining space proportionally with a weight factor.
-    #[staticmethod] pub fn fill(n: u16) -> Self { Self { inner: RConstraint::Fill(n) } }
+    #[staticmethod]
+    pub fn fill(n: u16) -> Self {
+        Self {
+            inner: RConstraint::Fill(n),
+        }
+    }
 
     /// At least `n` cells.
-    #[staticmethod] pub fn min(n: u16) -> Self { Self { inner: RConstraint::Min(n) } }
+    #[staticmethod]
+    pub fn min(n: u16) -> Self {
+        Self {
+            inner: RConstraint::Min(n),
+        }
+    }
 
     /// At most `n` cells.
-    #[staticmethod] pub fn max(n: u16) -> Self { Self { inner: RConstraint::Max(n) } }
+    #[staticmethod]
+    pub fn max(n: u16) -> Self {
+        Self {
+            inner: RConstraint::Max(n),
+        }
+    }
 
     /// A ratio of `numerator`:`denominator`.
     #[staticmethod]
     pub fn ratio(numerator: u32, denominator: u32) -> Self {
-        Self { inner: RConstraint::Ratio(numerator, denominator) }
+        Self {
+            inner: RConstraint::Ratio(numerator, denominator),
+        }
     }
 
     fn __repr__(&self) -> String {
@@ -176,7 +249,7 @@ impl Direction {
     pub(crate) fn to_ratatui(&self) -> RDirection {
         match self {
             Direction::Horizontal => RDirection::Horizontal,
-            Direction::Vertical   => RDirection::Vertical,
+            Direction::Vertical => RDirection::Vertical,
         }
     }
 }
@@ -195,9 +268,9 @@ pub enum Alignment {
 impl Alignment {
     pub(crate) fn to_ratatui(&self) -> RAlignment {
         match self {
-            Alignment::Left   => RAlignment::Left,
+            Alignment::Left => RAlignment::Left,
             Alignment::Center => RAlignment::Center,
-            Alignment::Right  => RAlignment::Right,
+            Alignment::Right => RAlignment::Right,
         }
     }
 }
@@ -278,24 +351,21 @@ impl Layout {
     ///
     /// Returns a list of `Rect` objects, one per constraint.
     pub fn split(&self, area: &Rect) -> PyResult<Vec<Rect>> {
-        use ratatui::layout::{Flex};
+        use ratatui::layout::Flex;
 
         if self.constraints.is_empty() {
             return Err(layout_err_to_py("No constraints set on Layout"));
         }
 
-        let rust_constraints: Vec<RConstraint> = self.constraints
-            .iter()
-            .map(|c| c.inner)
-            .collect();
+        let rust_constraints: Vec<RConstraint> = self.constraints.iter().map(|c| c.inner).collect();
 
         let flex = match self.flex.as_str() {
-            "start"        => Flex::Start,
-            "end"          => Flex::End,
-            "center"       => Flex::Center,
-            "space_between"=> Flex::SpaceBetween,
+            "start" => Flex::Start,
+            "end" => Flex::End,
+            "center" => Flex::Center,
+            "space_between" => Flex::SpaceBetween,
             "space_around" => Flex::SpaceAround,
-            _              => Flex::Start,
+            _ => Flex::Start,
         };
 
         let layout = RLayout::default()
@@ -311,8 +381,12 @@ impl Layout {
     }
 
     fn __repr__(&self) -> String {
-        format!("Layout(direction={:?}, constraints={}, margin={})",
-            self.direction, self.constraints.len(), self.margin)
+        format!(
+            "Layout(direction={:?}, constraints={}, margin={})",
+            self.direction,
+            self.constraints.len(),
+            self.margin
+        )
     }
 }
 

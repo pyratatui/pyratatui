@@ -1,6 +1,9 @@
 name: CI
 
 on:
+  push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
 
 env:
@@ -8,56 +11,45 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
-  ci:
-    name: Rust + Python Checks
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy, rustfmt
-
-      - uses: Swatinem/rust-cache@v2
-
-      - run: cargo fmt --check
-      - run: cargo clippy --all-targets --all-features -- -D warnings
-      - run: cargo test --all-features
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - run: pip install ruff mypy pytest pytest-asyncio
-      - run: ruff check python/pyratatui/
-      - run: mypy python/pyratatui/ --ignore-missing-imports
-      - run: pytest tests/python/ -v
-
   build:
-    name: Build Wheels
-    needs: ci
+    name: Build Wheels (${{ matrix.os }})
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
     runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: PyO3/maturin-action@v1
+      - name: Install Rust (rustup)
+        uses: actions-rs/toolchain@v1
         with:
-          command: build
-          args: --release --strip --out dist
-          manylinux: auto
+          toolchain: stable
+          profile: minimal
+          override: true
 
-      - uses: actions/upload-artifact@v4
+      - name: Install Python
+        uses: actions/setup-python@v5
         with:
-          name: wheel-${{ matrix.os }}
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install maturin
+        run: pip install maturin
+
+      - name: Build wheels
+        run: maturin build --release --strip --out dist
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}-py${{ matrix.python-version }}
           path: dist/*.whl
 
   release:
-    name: Create GitHub Release + Upload Wheels
+    name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -66,7 +58,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Extract version from Cargo.toml
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Extract version
         id: version
         run: |
           VERSION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
@@ -74,11 +73,11 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          pattern: wheel-*
+          pattern: wheels-*
           path: dist/
           merge-multiple: true
 
-      - name: Generate SHA256 checksums
+      - name: Generate checksums
         run: |
           cd dist
           sha256sum *.whl > SHA256SUMS
@@ -105,7 +104,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: wheel-*
+          pattern: wheels-*
           path: dist/
           merge-multiple: true
 

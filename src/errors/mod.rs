@@ -4,29 +4,53 @@
 //! All exceptions derive from `PyratatuiError` so callers can catch them
 //! at any granularity they choose.
 
-use pyo3::prelude::*;
-use pyo3::exceptions::PyException;
 use pyo3::create_exception;
+use pyo3::exceptions::PyException;
+use pyo3::prelude::*;
 
 // Root exception
-create_exception!(pyratatui, PyratatuiError, PyException,
-    "Base class for all pyratatui errors.");
+create_exception!(
+    pyratatui,
+    PyratatuiError,
+    PyException,
+    "Base class for all pyratatui errors."
+);
 
 // Domain-specific exceptions
-create_exception!(pyratatui, BackendError, PyratatuiError,
-    "Raised when the terminal backend encounters an I/O or init error.");
+create_exception!(
+    pyratatui,
+    BackendError,
+    PyratatuiError,
+    "Raised when the terminal backend encounters an I/O or init error."
+);
 
-create_exception!(pyratatui, LayoutError, PyratatuiError,
-    "Raised when layout constraints cannot be satisfied.");
+create_exception!(
+    pyratatui,
+    LayoutError,
+    PyratatuiError,
+    "Raised when layout constraints cannot be satisfied."
+);
 
-create_exception!(pyratatui, RenderError, PyratatuiError,
-    "Raised when a render/draw cycle fails.");
+create_exception!(
+    pyratatui,
+    RenderError,
+    PyratatuiError,
+    "Raised when a render/draw cycle fails."
+);
 
-create_exception!(pyratatui, AsyncError, PyratatuiError,
-    "Raised for async runtime or callback bridging failures.");
+create_exception!(
+    pyratatui,
+    AsyncError,
+    PyratatuiError,
+    "Raised for async runtime or callback bridging failures."
+);
 
-create_exception!(pyratatui, StyleError, PyratatuiError,
-    "Raised when an invalid style value is provided.");
+create_exception!(
+    pyratatui,
+    StyleError,
+    PyratatuiError,
+    "Raised when an invalid style value is provided."
+);
 
 /// Register all exceptions onto the top-level module.
 pub fn register_errors(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {

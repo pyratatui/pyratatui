@@ -3,8 +3,7 @@
 
 use pyo3::prelude::*;
 use ratatui::widgets::{
-    List as RList, ListItem as RListItem, ListState as RListState,
-    ListDirection as RListDirection,
+    List as RList, ListDirection as RListDirection, ListItem as RListItem, ListState as RListState,
 };
 
 use crate::style::Style;
@@ -45,7 +44,9 @@ pub struct ListItem {
 impl ListItem {
     pub(crate) fn to_ratatui(&self) -> RListItem<'static> {
         let mut item = RListItem::new(self.text.to_ratatui());
-        if let Some(ref s) = self.style { item = item.style(s.inner); }
+        if let Some(ref s) = self.style {
+            item = item.style(s.inner);
+        }
         item
     }
 }
@@ -64,11 +65,16 @@ impl ListItem {
     /// Create a `ListItem` from an existing `Text` object.
     #[staticmethod]
     pub fn from_text(text: &Text) -> ListItem {
-        ListItem { text: text.clone(), style: None }
+        ListItem {
+            text: text.clone(),
+            style: None,
+        }
     }
 
     pub fn style(&self, style: &Style) -> ListItem {
-        let mut i = self.clone(); i.style = Some(style.clone()); i
+        let mut i = self.clone();
+        i.style = Some(style.clone());
+        i
     }
 
     fn __repr__(&self) -> String {
@@ -95,31 +101,49 @@ pub struct ListState {
 #[pymethods]
 impl ListState {
     #[new]
-    pub fn new() -> Self { Self { inner: RListState::default() } }
+    pub fn new() -> Self {
+        Self {
+            inner: RListState::default(),
+        }
+    }
 
     /// Select item at `index`, or deselect if `None`.
     #[pyo3(signature = (index=None))]
-    pub fn select(&mut self, index: Option<usize>) { self.inner.select(index); }
+    pub fn select(&mut self, index: Option<usize>) {
+        self.inner.select(index);
+    }
 
     /// Move selection to the next item.
-    pub fn select_next(&mut self) { self.inner.select_next(); }
+    pub fn select_next(&mut self) {
+        self.inner.select_next();
+    }
 
     /// Move selection to the previous item.
-    pub fn select_previous(&mut self) { self.inner.select_previous(); }
+    pub fn select_previous(&mut self) {
+        self.inner.select_previous();
+    }
 
     /// Select the first item.
-    pub fn select_first(&mut self) { self.inner.select_first(); }
+    pub fn select_first(&mut self) {
+        self.inner.select_first();
+    }
 
     /// Select the last item in a list of `count` items.
-    pub fn select_last(&mut self) { self.inner.select_last(); }
+    pub fn select_last(&mut self) {
+        self.inner.select_last();
+    }
 
     /// Currently selected index, or `None`.
     #[getter]
-    pub fn selected(&self) -> Option<usize> { self.inner.selected() }
+    pub fn selected(&self) -> Option<usize> {
+        self.inner.selected()
+    }
 
     /// Scroll offset (rows hidden above the top).
     #[getter]
-    pub fn offset(&self) -> usize { self.inner.offset() }
+    pub fn offset(&self) -> usize {
+        self.inner.offset()
+    }
 
     fn __repr__(&self) -> String {
         format!("ListState(selected={:?})", self.inner.selected())
@@ -157,12 +181,22 @@ impl List {
     pub(crate) fn to_ratatui(&self) -> RList<'_> {
         let items: Vec<RListItem<'static>> = self.items.iter().map(|i| i.to_ratatui()).collect();
         let mut lst = RList::new(items);
-        if let Some(ref b) = self.block { lst = lst.block(b.to_ratatui()); }
-        if let Some(ref s) = self.style { lst = lst.style(s.inner); }
-        if let Some(ref s) = self.highlight_style { lst = lst.highlight_style(s.inner); }
-        if let Some(ref sym) = self.highlight_symbol { lst = lst.highlight_symbol(sym.as_str()); }
+        if let Some(ref b) = self.block {
+            lst = lst.block(b.to_ratatui());
+        }
+        if let Some(ref s) = self.style {
+            lst = lst.style(s.inner);
+        }
+        if let Some(ref s) = self.highlight_style {
+            lst = lst.highlight_style(s.inner);
+        }
+        if let Some(ref sym) = self.highlight_symbol {
+            lst = lst.highlight_symbol(sym.as_str());
+        }
         lst = lst.direction(self.direction.to_ratatui());
-        if self.repeat_highlight_symbol { lst = lst.repeat_highlight_symbol(true); }
+        if self.repeat_highlight_symbol {
+            lst = lst.repeat_highlight_symbol(true);
+        }
         lst
     }
 }
@@ -173,29 +207,44 @@ impl List {
     pub fn new(items: Vec<PyRef<ListItem>>) -> Self {
         Self {
             items: items.iter().map(|i| (**i).clone()).collect(),
-            block: None, style: None, highlight_style: None,
-            highlight_symbol: None, direction: ListDirection::TopToBottom,
+            block: None,
+            style: None,
+            highlight_style: None,
+            highlight_symbol: None,
+            direction: ListDirection::TopToBottom,
             repeat_highlight_symbol: false,
         }
     }
 
     pub fn block(&self, block: &Block) -> List {
-        let mut l = self.clone(); l.block = Some(block.clone()); l
+        let mut l = self.clone();
+        l.block = Some(block.clone());
+        l
     }
     pub fn style(&self, style: &Style) -> List {
-        let mut l = self.clone(); l.style = Some(style.clone()); l
+        let mut l = self.clone();
+        l.style = Some(style.clone());
+        l
     }
     pub fn highlight_style(&self, style: &Style) -> List {
-        let mut l = self.clone(); l.highlight_style = Some(style.clone()); l
+        let mut l = self.clone();
+        l.highlight_style = Some(style.clone());
+        l
     }
     pub fn highlight_symbol(&self, sym: &str) -> List {
-        let mut l = self.clone(); l.highlight_symbol = Some(sym.to_string()); l
+        let mut l = self.clone();
+        l.highlight_symbol = Some(sym.to_string());
+        l
     }
     pub fn direction(&self, dir: &ListDirection) -> List {
-        let mut l = self.clone(); l.direction = dir.clone(); l
+        let mut l = self.clone();
+        l.direction = dir.clone();
+        l
     }
     pub fn repeat_highlight_symbol(&self, v: bool) -> List {
-        let mut l = self.clone(); l.repeat_highlight_symbol = v; l
+        let mut l = self.clone();
+        l.repeat_highlight_symbol = v;
+        l
     }
 
     fn __repr__(&self) -> String {

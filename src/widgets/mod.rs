@@ -5,31 +5,31 @@
 
 use pyo3::prelude::*;
 
-mod block;
-mod paragraph;
-mod list;
-mod table;
-mod gauge;
 mod barchart;
-mod sparkline;
-mod clear;
+mod block;
 mod canvas_widget;
+mod clear;
+mod gauge;
+mod list;
+mod paragraph;
 mod scrollbar;
+mod sparkline;
+mod table;
 mod tabs;
 
+#[allow(unused_imports)]
+pub use barchart::{Bar, BarChart, BarGroup};
 pub use block::Block;
-pub use paragraph::Paragraph;
-#[allow(unused_imports)]
-pub use list::{List, ListItem, ListState, ListDirection};
-#[allow(unused_imports)]
-pub use table::{Table, TableState, Cell, Row};
+pub use clear::Clear;
 pub use gauge::{Gauge, LineGauge};
 #[allow(unused_imports)]
-pub use barchart::{BarChart, Bar, BarGroup};
-pub use sparkline::Sparkline;
-pub use clear::Clear;
+pub use list::{List, ListDirection, ListItem, ListState};
+pub use paragraph::Paragraph;
 #[allow(unused_imports)]
-pub use scrollbar::{Scrollbar, ScrollbarState, ScrollbarOrientation};
+pub use scrollbar::{Scrollbar, ScrollbarOrientation, ScrollbarState};
+pub use sparkline::Sparkline;
+#[allow(unused_imports)]
+pub use table::{Cell, Row, Table, TableState};
 pub use tabs::Tabs;
 
 pub fn register_widgets(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {

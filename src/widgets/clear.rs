@@ -10,14 +10,20 @@ use ratatui::widgets::Clear as RClear;
 pub struct Clear;
 
 impl Clear {
-    pub(crate) fn to_ratatui(&self) -> RClear { RClear }
+    pub(crate) fn to_ratatui(&self) -> RClear {
+        RClear
+    }
 }
 
 #[pymethods]
 impl Clear {
     #[new]
-    pub fn new() -> Self { Self }
-    fn __repr__(&self) -> String { "Clear()".to_string() }
+    pub fn new() -> Self {
+        Self
+    }
+    fn __repr__(&self) -> String {
+        "Clear()".to_string()
+    }
 }
 
 pub fn register_clear(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {

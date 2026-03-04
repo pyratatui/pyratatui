@@ -2,8 +2,8 @@
 //! Python bindings for `Gauge` and `LineGauge`.
 
 use pyo3::prelude::*;
-use ratatui::widgets::{Gauge as RGauge, LineGauge as RLineGauge};
 use ratatui::symbols::line;
+use ratatui::widgets::{Gauge as RGauge, LineGauge as RLineGauge};
 
 use crate::style::Style;
 use crate::widgets::block::Block;
@@ -36,13 +36,21 @@ impl Gauge {
         let ratio = self.ratio.unwrap_or_else(|| self.percent as f64 / 100.0);
         let mut g = RGauge::default().ratio(ratio.clamp(0.0, 1.0));
 
-        if let Some(ref b) = self.block { g = g.block(b.to_ratatui()); }
-        if let Some(ref s) = self.style { g = g.style(s.inner); }
-        if let Some(ref s) = self.gauge_style { g = g.gauge_style(s.inner); }
+        if let Some(ref b) = self.block {
+            g = g.block(b.to_ratatui());
+        }
+        if let Some(ref s) = self.style {
+            g = g.style(s.inner);
+        }
+        if let Some(ref s) = self.gauge_style {
+            g = g.gauge_style(s.inner);
+        }
         if let Some(ref l) = self.label {
             g = g.label(ratatui::text::Span::raw(l.clone()));
         }
-        if self.use_unicode { g = g.use_unicode(true); }
+        if self.use_unicode {
+            g = g.use_unicode(true);
+        }
         g
     }
 }
@@ -52,31 +60,51 @@ impl Gauge {
     #[new]
     pub fn new() -> Self {
         Self {
-            block: None, percent: 0, style: None, gauge_style: None,
-            label: None, ratio: None, use_unicode: false,
+            block: None,
+            percent: 0,
+            style: None,
+            gauge_style: None,
+            label: None,
+            ratio: None,
+            use_unicode: false,
         }
     }
 
     pub fn block(&self, block: &Block) -> Gauge {
-        let mut g = self.clone(); g.block = Some(block.clone()); g
+        let mut g = self.clone();
+        g.block = Some(block.clone());
+        g
     }
     pub fn percent(&self, pct: u16) -> Gauge {
-        let mut g = self.clone(); g.percent = pct.min(100); g.ratio = None; g
+        let mut g = self.clone();
+        g.percent = pct.min(100);
+        g.ratio = None;
+        g
     }
     pub fn ratio(&self, ratio: f64) -> Gauge {
-        let mut g = self.clone(); g.ratio = Some(ratio.clamp(0.0, 1.0)); g
+        let mut g = self.clone();
+        g.ratio = Some(ratio.clamp(0.0, 1.0));
+        g
     }
     pub fn style(&self, style: &Style) -> Gauge {
-        let mut g = self.clone(); g.style = Some(style.clone()); g
+        let mut g = self.clone();
+        g.style = Some(style.clone());
+        g
     }
     pub fn gauge_style(&self, style: &Style) -> Gauge {
-        let mut g = self.clone(); g.gauge_style = Some(style.clone()); g
+        let mut g = self.clone();
+        g.gauge_style = Some(style.clone());
+        g
     }
     pub fn label(&self, label: &str) -> Gauge {
-        let mut g = self.clone(); g.label = Some(label.to_string()); g
+        let mut g = self.clone();
+        g.label = Some(label.to_string());
+        g
     }
     pub fn use_unicode(&self, v: bool) -> Gauge {
-        let mut g = self.clone(); g.use_unicode = v; g
+        let mut g = self.clone();
+        g.use_unicode = v;
+        g
     }
 
     fn __repr__(&self) -> String {
@@ -108,16 +136,22 @@ impl LineGauge {
     pub(crate) fn to_ratatui(&self) -> RLineGauge<'static> {
         let ls = match self.line_set.as_str() {
             "double" => line::DOUBLE,
-            "thick"  => line::THICK,
-            _        => line::NORMAL,
+            "thick" => line::THICK,
+            _ => line::NORMAL,
         };
         let mut g = RLineGauge::default()
             .ratio(self.ratio.clamp(0.0, 1.0))
             .line_set(ls);
 
-        if let Some(ref b) = self.block { g = g.block(b.to_ratatui()); }
-        if let Some(ref s) = self.style { g = g.style(s.inner); }
-        if let Some(ref s) = self.gauge_style { g = g.filled_style(s.inner); }
+        if let Some(ref b) = self.block {
+            g = g.block(b.to_ratatui());
+        }
+        if let Some(ref s) = self.style {
+            g = g.style(s.inner);
+        }
+        if let Some(ref s) = self.gauge_style {
+            g = g.filled_style(s.inner);
+        }
         if let Some(ref l) = self.label {
             g = g.label(ratatui::text::Span::raw(l.clone()));
         }
@@ -130,31 +164,47 @@ impl LineGauge {
     #[new]
     pub fn new() -> Self {
         Self {
-            block: None, ratio: 0.0, style: None, gauge_style: None,
-            label: None, line_set: "normal".into(),
+            block: None,
+            ratio: 0.0,
+            style: None,
+            gauge_style: None,
+            label: None,
+            line_set: "normal".into(),
         }
     }
     pub fn block(&self, block: &Block) -> LineGauge {
-        let mut g = self.clone(); g.block = Some(block.clone()); g
+        let mut g = self.clone();
+        g.block = Some(block.clone());
+        g
     }
     pub fn ratio(&self, ratio: f64) -> LineGauge {
-        let mut g = self.clone(); g.ratio = ratio.clamp(0.0, 1.0); g
+        let mut g = self.clone();
+        g.ratio = ratio.clamp(0.0, 1.0);
+        g
     }
     pub fn percent(&self, pct: u16) -> LineGauge {
         self.ratio(pct as f64 / 100.0)
     }
     pub fn style(&self, style: &Style) -> LineGauge {
-        let mut g = self.clone(); g.style = Some(style.clone()); g
+        let mut g = self.clone();
+        g.style = Some(style.clone());
+        g
     }
     pub fn gauge_style(&self, style: &Style) -> LineGauge {
-        let mut g = self.clone(); g.gauge_style = Some(style.clone()); g
+        let mut g = self.clone();
+        g.gauge_style = Some(style.clone());
+        g
     }
     pub fn label(&self, label: &str) -> LineGauge {
-        let mut g = self.clone(); g.label = Some(label.to_string()); g
+        let mut g = self.clone();
+        g.label = Some(label.to_string());
+        g
     }
     /// Line set: "normal" | "thick" | "double".
     pub fn line_set(&self, name: &str) -> LineGauge {
-        let mut g = self.clone(); g.line_set = name.to_string(); g
+        let mut g = self.clone();
+        g.line_set = name.to_string();
+        g
     }
 
     fn __repr__(&self) -> String {

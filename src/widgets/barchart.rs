@@ -2,13 +2,13 @@
 //! Python bindings for `BarChart`, `Bar`, and `BarGroup`.
 
 use pyo3::prelude::*;
+use ratatui::layout::Direction as RDirection;
 use ratatui::widgets::BarChart as RBarChart;
 use ratatui::widgets::{Bar as RBar, BarGroup as RBarGroup};
-use ratatui::layout::Direction as RDirection;
 
+use crate::layout::Direction;
 use crate::style::Style;
 use crate::widgets::block::Block;
-use crate::layout::Direction;
 
 /// A single bar in a bar chart.
 #[pyclass(module = "pyratatui")]
@@ -27,9 +27,15 @@ impl Bar {
         if let Some(ref l) = self.label {
             b = b.label(ratatui::text::Line::from(l.clone()));
         }
-        if let Some(ref s) = self.style { b = b.style(s.inner); }
-        if let Some(ref s) = self.value_style { b = b.value_style(s.inner); }
-        if let Some(ref tv) = self.text_value { b = b.text_value(tv.clone()); }
+        if let Some(ref s) = self.style {
+            b = b.style(s.inner);
+        }
+        if let Some(ref s) = self.value_style {
+            b = b.value_style(s.inner);
+        }
+        if let Some(ref tv) = self.text_value {
+            b = b.text_value(tv.clone());
+        }
         b
     }
 }
@@ -39,12 +45,32 @@ impl Bar {
     #[new]
     #[pyo3(signature = (value, label=None))]
     pub fn new(value: u64, label: Option<String>) -> Self {
-        Self { label, value, style: None, value_style: None, text_value: None }
+        Self {
+            label,
+            value,
+            style: None,
+            value_style: None,
+            text_value: None,
+        }
     }
-    pub fn style(&self, style: &Style) -> Bar { let mut b = self.clone(); b.style = Some(style.clone()); b }
-    pub fn value_style(&self, style: &Style) -> Bar { let mut b = self.clone(); b.value_style = Some(style.clone()); b }
-    pub fn text_value(&self, tv: &str) -> Bar { let mut b = self.clone(); b.text_value = Some(tv.to_string()); b }
-    fn __repr__(&self) -> String { format!("Bar(value={})", self.value) }
+    pub fn style(&self, style: &Style) -> Bar {
+        let mut b = self.clone();
+        b.style = Some(style.clone());
+        b
+    }
+    pub fn value_style(&self, style: &Style) -> Bar {
+        let mut b = self.clone();
+        b.value_style = Some(style.clone());
+        b
+    }
+    pub fn text_value(&self, tv: &str) -> Bar {
+        let mut b = self.clone();
+        b.text_value = Some(tv.to_string());
+        b
+    }
+    fn __repr__(&self) -> String {
+        format!("Bar(value={})", self.value)
+    }
 }
 
 /// A labelled group of bars.
@@ -71,9 +97,14 @@ impl BarGroup {
     #[new]
     #[pyo3(signature = (bars, label=None))]
     pub fn new(bars: Vec<PyRef<Bar>>, label: Option<String>) -> Self {
-        Self { label, bars: bars.iter().map(|b| (**b).clone()).collect() }
+        Self {
+            label,
+            bars: bars.iter().map(|b| (**b).clone()).collect(),
+        }
     }
-    fn __repr__(&self) -> String { format!("BarGroup(bars={})", self.bars.len()) }
+    fn __repr__(&self) -> String {
+        format!("BarGroup(bars={})", self.bars.len())
+    }
 }
 
 /// A vertical or horizontal bar chart.
@@ -104,7 +135,10 @@ pub struct BarChart {
 
 impl BarChart {
     pub(crate) fn to_ratatui(&self) -> RBarChart<'static> {
-        let dir = match self.direction { Direction::Vertical => RDirection::Vertical, _ => RDirection::Horizontal };
+        let dir = match self.direction {
+            Direction::Vertical => RDirection::Vertical,
+            _ => RDirection::Horizontal,
+        };
         let groups: Vec<RBarGroup<'static>> = self.data.iter().map(|g| g.to_ratatui()).collect();
         let mut chart = RBarChart::default()
             .bar_width(self.bar_width)
@@ -112,13 +146,27 @@ impl BarChart {
             .group_gap(self.group_gap)
             .direction(dir);
 
-        for g in groups { chart = chart.data(g); }
-        if let Some(m) = self.max { chart = chart.max(m); }
-        if let Some(ref b) = self.block { chart = chart.block(b.to_ratatui()); }
-        if let Some(ref s) = self.style { chart = chart.style(s.inner); }
-        if let Some(ref s) = self.bar_style { chart = chart.bar_style(s.inner); }
-        if let Some(ref s) = self.value_style { chart = chart.value_style(s.inner); }
-        if let Some(ref s) = self.label_style { chart = chart.label_style(s.inner); }
+        for g in groups {
+            chart = chart.data(g);
+        }
+        if let Some(m) = self.max {
+            chart = chart.max(m);
+        }
+        if let Some(ref b) = self.block {
+            chart = chart.block(b.to_ratatui());
+        }
+        if let Some(ref s) = self.style {
+            chart = chart.style(s.inner);
+        }
+        if let Some(ref s) = self.bar_style {
+            chart = chart.bar_style(s.inner);
+        }
+        if let Some(ref s) = self.value_style {
+            chart = chart.value_style(s.inner);
+        }
+        if let Some(ref s) = self.label_style {
+            chart = chart.label_style(s.inner);
+        }
         chart
     }
 }
@@ -128,24 +176,72 @@ impl BarChart {
     #[new]
     pub fn new() -> Self {
         Self {
-            data: vec![], block: None, bar_width: 3, bar_gap: 1,
-            group_gap: 3, max: None, style: None, bar_style: None,
-            value_style: None, label_style: None, direction: Direction::Vertical,
+            data: vec![],
+            block: None,
+            bar_width: 3,
+            bar_gap: 1,
+            group_gap: 3,
+            max: None,
+            style: None,
+            bar_style: None,
+            value_style: None,
+            label_style: None,
+            direction: Direction::Vertical,
         }
     }
     pub fn data(&self, group: &BarGroup) -> BarChart {
-        let mut c = self.clone(); c.data.push(group.clone()); c
+        let mut c = self.clone();
+        c.data.push(group.clone());
+        c
     }
-    pub fn block(&self, block: &Block) -> BarChart { let mut c = self.clone(); c.block = Some(block.clone()); c }
-    pub fn bar_width(&self, w: u16) -> BarChart { let mut c = self.clone(); c.bar_width = w; c }
-    pub fn bar_gap(&self, g: u16) -> BarChart { let mut c = self.clone(); c.bar_gap = g; c }
-    pub fn group_gap(&self, g: u16) -> BarChart { let mut c = self.clone(); c.group_gap = g; c }
-    pub fn max(&self, m: u64) -> BarChart { let mut c = self.clone(); c.max = Some(m); c }
-    pub fn style(&self, s: &Style) -> BarChart { let mut c = self.clone(); c.style = Some(s.clone()); c }
-    pub fn bar_style(&self, s: &Style) -> BarChart { let mut c = self.clone(); c.bar_style = Some(s.clone()); c }
-    pub fn value_style(&self, s: &Style) -> BarChart { let mut c = self.clone(); c.value_style = Some(s.clone()); c }
-    pub fn label_style(&self, s: &Style) -> BarChart { let mut c = self.clone(); c.label_style = Some(s.clone()); c }
-    fn __repr__(&self) -> String { format!("BarChart(groups={})", self.data.len()) }
+    pub fn block(&self, block: &Block) -> BarChart {
+        let mut c = self.clone();
+        c.block = Some(block.clone());
+        c
+    }
+    pub fn bar_width(&self, w: u16) -> BarChart {
+        let mut c = self.clone();
+        c.bar_width = w;
+        c
+    }
+    pub fn bar_gap(&self, g: u16) -> BarChart {
+        let mut c = self.clone();
+        c.bar_gap = g;
+        c
+    }
+    pub fn group_gap(&self, g: u16) -> BarChart {
+        let mut c = self.clone();
+        c.group_gap = g;
+        c
+    }
+    pub fn max(&self, m: u64) -> BarChart {
+        let mut c = self.clone();
+        c.max = Some(m);
+        c
+    }
+    pub fn style(&self, s: &Style) -> BarChart {
+        let mut c = self.clone();
+        c.style = Some(s.clone());
+        c
+    }
+    pub fn bar_style(&self, s: &Style) -> BarChart {
+        let mut c = self.clone();
+        c.bar_style = Some(s.clone());
+        c
+    }
+    pub fn value_style(&self, s: &Style) -> BarChart {
+        let mut c = self.clone();
+        c.value_style = Some(s.clone());
+        c
+    }
+    pub fn label_style(&self, s: &Style) -> BarChart {
+        let mut c = self.clone();
+        c.label_style = Some(s.clone());
+        c
+    }
+    fn __repr__(&self) -> String {
+        format!("BarChart(groups={})", self.data.len())
+    }
 }
 
 pub fn register_barchart(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {

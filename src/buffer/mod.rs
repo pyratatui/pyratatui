@@ -33,13 +33,17 @@ impl Buffer {
     /// Create a new blank buffer filling the given area.
     #[new]
     pub fn new(area: &Rect) -> Self {
-        Self { inner: RBuffer::empty(area.inner) }
+        Self {
+            inner: RBuffer::empty(area.inner),
+        }
     }
 
     /// The area this buffer covers.
     #[getter]
     pub fn area(&self) -> Rect {
-        Rect { inner: self.inner.area }
+        Rect {
+            inner: self.inner.area,
+        }
     }
 
     /// Write a plain string at `(x, y)` using an optional style.
@@ -66,7 +70,9 @@ impl Buffer {
     }
 
     /// Reset all cells to blank.
-    pub fn reset(&mut self) { self.inner.reset(); }
+    pub fn reset(&mut self) {
+        self.inner.reset();
+    }
 
     /// Merge `other` into `self` (other overwrites non-empty cells).
     pub fn merge(&mut self, other: &Buffer) {
