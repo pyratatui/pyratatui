@@ -1,5 +1,9 @@
 # pyratatui
 
+<p>
+  <img src="../gallery/pyratatui.png" alt="PyRatatui Logo" width="110">
+</p>
+
 **Production-grade Python bindings for [ratatui](https://ratatui.rs) 0.29**
 
 [![CI](https://img.shields.io/github/actions/workflow/status/pyratatui/pyratatui/ci.yml?style=for-the-badge)](https://github.com/pyratatui/pyratatui/actions)

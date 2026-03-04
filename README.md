@@ -1,5 +1,9 @@
 # pyratatui 🐀
 
+<p>
+  <img src="gallery/pyratatui.png" alt="PyRatatui Logo" width="110">
+</p>
+
 **Production-grade Python bindings for [ratatui](https://ratatui.rs) 0.29**
 
 ![Demo Image](gallery/image.png)
