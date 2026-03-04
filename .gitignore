@@ -1,0 +1,49 @@
+# Compiled files
+/target/
+
+# Rust/Cargo
+**/*.rs.bk
+Cargo.lock
+
+# Uncomment the next line if this is a binary/application project.
+#! Cargo.lock
+
+# IDEs
+.idea/
+.vscode/
+*.code-workspace
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.*
+
+# Coverage
+coverage/
+*.profraw
+*.profdata
+
+# Test artifacts
+**/*.snap.new
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
+
+# Generated documentation
+/doc/
+
+# Local builds
+dist/
+
+# Rustfmt backup files
+*.rs.bk
