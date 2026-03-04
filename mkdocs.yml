@@ -1,5 +1,5 @@
 site_name: pyratatui
-site_description: Production-grade Python bindings for ratatui 0.29 + tachyonfx animations
+site_description: Maturin and pyo3 powered efficient Python bindings for ratatui 0.29 + tachyonfx animations
 site_url: https://pyratatui.github.io/pyratatui
 repo_url: https://github.com/pyratatui/pyratatui
 repo_name: pyratatui/pyratatui
