@@ -2,11 +2,15 @@
 
 **Production-grade Python bindings for [ratatui](https://ratatui.rs) 0.29**
 
-[![CI](https://github.com/pyratatui/pyratatui/actions/workflows/ci.yml/badge.svg)](https://github.com/pyratatui/pyratatui/actions)
-[![PyPI](https://img.shields.io/pypi/v/pyratatui.svg)](https://pypi.org/project/pyratatui/)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
-[![Rust](https://img.shields.io/badge/rust-stable-orange.svg)](https://www.rust-lang.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/pyratatui/pyratatui/ci.yml?style=for-the-badge)](https://github.com/pyratatui/pyratatui/actions)
+
+[![PyPI](https://img.shields.io/pypi/v/pyratatui?style=for-the-badge)](https://pypi.org/project/pyratatui/)
+
+[![Python](https://img.shields.io/pypi/pyversions/pyratatui?style=for-the-badge)](https://www.python.org/)
+
+[![Rust](https://img.shields.io/badge/rust-stable-orange?style=for-the-badge&logo=rust)](https://www.rust-lang.org/)
+
+[![License](https://img.shields.io/github/license/pyratatui/pyratatui?style=for-the-badge)](LICENSE)
 
 ---
 
