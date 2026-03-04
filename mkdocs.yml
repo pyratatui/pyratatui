@@ -7,8 +7,6 @@ docs_dir: docs
 
 theme:
   name: material
-  logo: gallery/pyratatui.png
-  favicon: gallery/pyratatui.png
   palette:
     - scheme: slate
       primary: black
