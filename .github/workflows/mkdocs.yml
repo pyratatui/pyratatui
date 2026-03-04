@@ -10,27 +10,22 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Checkout repository
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      # Step 2: Setup Python
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
-      # Step 3: Install MkDocs 1.x + Material + mkdocstrings + extra extensions
-      - name: Install MkDocs + dependencies
+      - name: Install MkDocs + Material + mkdocstrings + extensions
         run: |
           pip install --upgrade pip
-          pip install "mkdocs<2.0" mkdocs-material==9.1.18 mkdocstrings pymdown-extensions
+          pip install "mkdocs<2.0" mkdocs-material==9.1.18 "mkdocstrings[python]" pymdown-extensions
 
-      # Step 4: Build the site
       - name: Build MkDocs site
         run: mkdocs build --clean
 
-      # Step 5: Deploy to gh-pages branch
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
