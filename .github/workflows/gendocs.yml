@@ -24,7 +24,7 @@ jobs:
       - name: Install MkDocs and dependencies
         run: |
           pip install --upgrade pip
-          pip install mkdocs mkdocs-material "mkdocstrings[python]" pymdown-extensions tachyonfx
+          pip install mkdocs mkdocs-material "mkdocstrings[python]" pymdown-extensions
 
       # 4️⃣ Build MkDocs site
       - name: Build MkDocs site
