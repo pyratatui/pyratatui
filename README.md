@@ -2,6 +2,8 @@
 
 **Production-grade Python bindings for [ratatui](https://ratatui.rs) 0.29**
 
+![Demo Image](gallery/image.png)
+
 [![CI](https://github.com/pyratatui/pyratatui/actions/workflows/ci.yml/badge.svg)](https://github.com/pyratatui/pyratatui/actions)
 [![PyPI](https://img.shields.io/pypi/v/pyratatui.svg)](https://pypi.org/project/pyratatui/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
