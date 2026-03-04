@@ -6,7 +6,7 @@
        style="border: 3px solid #000; border-radius: 8px; padding: 4px;">  
 </p>
 
-**Production-grade Python bindings for [ratatui](https://ratatui.rs) 0.29**
+**🐍✨🤩 Maturin-based Python bindings for [ratatui](https://ratatui.rs) 0.29 🦀🔥😎**
 
 ---
 
