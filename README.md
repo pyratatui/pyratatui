@@ -1,17 +1,29 @@
-# pyratatui 🐀
-
-<p>
-  <img src="gallery/pyratatui.png" alt="PyRatatui Logo" width="110">
+# pyratatui 🐀  
+  
+<p align="center">  
+  <img src="https://github.com/pyratatui/pyratatui/raw/main/gallery/pyratatui.png" 
+       alt="PyRatatui Logo" width="110" 
+       style="border: 3px solid #000; border-radius: 8px; padding: 4px;">  
 </p>
 
 **Production-grade Python bindings for [ratatui](https://ratatui.rs) 0.29**
 
-![Demo Image](gallery/image.png)
+---
 
-<p>
-  <strong>Partnered by:</strong><br>
-  <img src="gallery/alacritty.png" alt="Alacritty Logo" width="110">
+<p align="center">
+  <img src="https://github.com/pyratatui/pyratatui/raw/main/gallery/image.png" 
+       alt="Demo Image" width="400">
 </p>
+
+---
+
+<p align="center">
+  <strong>Partnered by:</strong><br>
+  <img src="https://github.com/pyratatui/pyratatui/raw/main/gallery/alacritty.png" 
+       alt="Alacritty Logo" width="110">
+</p>
+
+---
 
 [![CI](https://img.shields.io/github/actions/workflow/status/pyratatui/pyratatui/ci.yml?style=for-the-badge)](https://github.com/pyratatui/pyratatui/actions)
 
