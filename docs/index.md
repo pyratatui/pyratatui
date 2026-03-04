@@ -1,6 +1,6 @@
 # pyratatui
 
-**Production-grade Python bindings for [ratatui](https://ratatui.rs) 0.29**
+**🐍🦀🔥🤩✨ Maturin and pyo3 powered Python bindings for [ratatui](https://ratatui.rs) 0.29 😎😍💪📝💯**
 
 [![CI](https://img.shields.io/github/actions/workflow/status/pyratatui/pyratatui/ci.yml?style=for-the-badge)](https://github.com/pyratatui/pyratatui/actions)
 
