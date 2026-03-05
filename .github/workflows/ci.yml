@@ -9,7 +9,7 @@ env:
 
 jobs:
   build:
-    name: Build Wheels (${{ matrix.os }})
+    name: Build wheels (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
@@ -18,21 +18,41 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Install Rust
+      - name: Rust dependency cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-targets: true
+          cache-all-crates: true
+
+      - name: Setup sccache (optional Rust build cache)
+        uses: Mozilla-Actions/sccache-action@v0.0.9
+        with:
+          version: "v0.10.0"
+
+      - name: Enable sccache
+        run: |
+          echo "RUSTC_WRAPPER=$(which sccache)" >> $GITHUB_ENV
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+
+      - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install Python
-        uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@v6
         with:
           python-version: "3.x"
+          cache: "pip"
 
-      - name: Install maturin
-        run: pip install maturin
+      - name: Upgrade pip & install maturin
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install maturin==1.7.2
 
-      - name: Build wheels
-        run: maturin build --release --strip --out dist
+      - name: Build Wheels (verbose)
+        run: maturin build --release --strip --out dist --manylinux 2014 --verbose
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -41,7 +61,7 @@ jobs:
           path: dist/*.whl
 
   release:
-    name: Create GitHub Release
+    name: Create GitHub Release (with categorized changelog)
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -50,11 +70,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Python (for version extraction)
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+          cache: "pip"
+
       - name: Extract version
         id: version
         run: |
-          VERSION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          python - << 'EOF'
+          import tomli
+          with open("pyproject.toml","rb") as f:
+              data = tomli.load(f)
+          print("version="+data["project"]["version"])
+          EOF > version.txt
+          echo "version=$(cut -d= -f2 version.txt)" >> $GITHUB_OUTPUT
+
+      - name: Generate categorized changelog
+        id: changelog
+        uses: janheinrichmerker/action-github-changelog-generator@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          unreleased-only: true
+          breakingLabels: "breaking,major"
+          bugLabels: "bug,fix"
+          enhancementLabels: "enhancement,feature"
+          securityLabels: "security"
+          simpleList: false
 
       - uses: actions/download-artifact@v4
         with:
@@ -67,11 +110,13 @@ jobs:
           cd dist
           sha256sum *.whl > SHA256SUMS
 
-      - name: Create Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
           name: v${{ steps.version.outputs.version }}
+          body: |
+            ${{ steps.changelog.outputs.changelog }}
           files: |
             dist/*.whl
             dist/SHA256SUMS
@@ -93,5 +138,6 @@ jobs:
           path: dist/
           merge-multiple: true
 
-      - uses: pypa/gh-action-pypi-publish@release/v1
-      
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        
