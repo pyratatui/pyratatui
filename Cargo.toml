@@ -1,6 +1,6 @@
 [package]
 name = "pyratatui"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["pyratatui contributors"]
 description = "🚀🍀 PyRatatui — Professional Python bindings for ratatui 0.29 🦀🤩 | 💥🔥 High-performance Rust TUI engine for building rich terminal applications, interactive CLIs, dashboards, and text-based UIs 💯✨"
