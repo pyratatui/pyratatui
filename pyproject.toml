@@ -5,7 +5,7 @@ build-backend = "maturin"
 [project]
 name = "pyratatui"
 version = "0.1.0"
-description = "Production-grade Python bindings for ratatui 0.29 — the high-performance Rust TUI engine"
+description = "Professional Python bindings for ratatui 0.29 — the high-performance Rust TUI engine"
 authors = [{ name = "pyratatui contributors" }]
 license = { text = "MIT" }
 readme = "README.md"
