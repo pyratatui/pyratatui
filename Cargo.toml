@@ -1,9 +1,9 @@
 [package]
 name = "pyratatui"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["pyratatui contributors"]
-description = "Production-grade Python bindings for ratatui 0.29 — the Rust TUI engine"
+description = "🚀🍀 PyRatatui — Professional Python bindings for ratatui 0.29 🦀🤩 | 💥🔥 High-performance Rust TUI engine for building rich terminal applications, interactive CLIs, dashboards, and text-based UIs 💯✨"
 license = "MIT"
 repository = "https://github.com/pyratatui/pyratatui"
 readme = "README.md"
