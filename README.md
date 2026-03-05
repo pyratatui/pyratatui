@@ -1,65 +1,45 @@
-# pyratatui 🐀  
-  
-<p align="center">  
-  <img src="https://github.com/pyratatui/pyratatui/raw/main/gallery/pyratatui.png" 
-       alt="PyRatatui Logo" width="110" 
-       style="border: 3px solid #000; border-radius: 8px; padding: 4px;">  
-</p>
+# pyratatui 🐀💎✨🔥
 
-**🐍✨🤩 Maturin-based Python bindings for [ratatui](https://ratatui.rs) 0.29 🦀🔥😎**
+![PyRatatui Logo](https://github.com/pyratatui/pyratatui/raw/main/gallery/pyratatui.png)
 
----
+**🐍🚀 Maturin-based Python bindings for [ratatui](https://ratatui.rs) 0.29 🦀⚡😎**
 
-<p align="center">
-  <img src="https://github.com/pyratatui/pyratatui/raw/main/gallery/image.png" 
-       alt="Demo Image" width="400">
-</p>
+![Demo](https://github.com/pyratatui/pyratatui/raw/main/gallery/image.png)
 
----
+**Partnered with:**
+![Alacritty](https://github.com/pyratatui/pyratatui/raw/main/gallery/alacritty.png)
 
-<p align="center">
-  <strong>Partnered by:</strong><br>
-  <img src="https://github.com/pyratatui/pyratatui/raw/main/gallery/alacritty.png" 
-       alt="Alacritty Logo" width="110">
-</p>
-
----
-
-[![CI](https://img.shields.io/github/actions/workflow/status/pyratatui/pyratatui/ci.yml?style=for-the-badge)](https://github.com/pyratatui/pyratatui/actions)
-
-[![PyPI](https://img.shields.io/pypi/v/pyratatui?style=for-the-badge)](https://pypi.org/project/pyratatui/)
-
-[![Python](https://img.shields.io/pypi/pyversions/pyratatui?style=for-the-badge)](https://www.python.org/)
-
+[![CI](https://img.shields.io/github/actions/workflow/status/pyratatui/pyratatui/ci.yml?style=for-the-badge)](https://github.com/pyratatui/pyratatui/actions)  
+[![PyPI](https://img.shields.io/pypi/v/pyratatui?style=for-the-badge)](https://pypi.org/project/pyratatui/)  
+[![Python](https://img.shields.io/pypi/pyversions/pyratatui?style=for-the-badge)](https://www.python.org/)  
 [![License](https://img.shields.io/github/license/pyratatui/pyratatui?style=for-the-badge)](LICENSE)
 
-pyratatui is a language bridge between Rust's high-performance terminal rendering engine
-and Python's ergonomic, productive ecosystem.
+pyratatui bridges Rust's ultra-fast terminal rendering engine 🦀💨 with Python's ergonomic and productive ecosystem 🐍💡💎.
 
-- All rendering is native Rust via **ratatui 0.29**
-- Python gets a fully **Pythonic API** — fluent builders, snake_case, type stubs
-- **Async ready** — `AsyncTerminal` integrates with asyncio seamlessly
-- **Zero Rustisms** in the public API
-- **ABI3 wheels** — one wheel per OS/arch, runs on Python 3.10–3.13+
+- Native Rust rendering via **ratatui 0.29** ⚡🚀
+- Fully **Pythonic API** — fluent builders, snake_case, type stubs 🐍✨
+- **Async-ready** — `AsyncTerminal` integrates seamlessly with asyncio ⚡💻
+- **Zero Rustisms** in Python API ✅
+- **ABI3 wheels** — one wheel per OS/arch, Python 3.10–3.13+ 💎🌟
 
 ---
 
-## Installation
+## Installation 💾🛠️
 
 ```bash
-pip install pyratatui
+pip install pyratatui 🔥
 ```
 
-For building from source, you need Rust stable and maturin:
+Build from source (requires Rust stable + maturin 🦀):
 
 ```bash
 pip install maturin
-maturin develop --release
+maturin develop --release 🚀
 ```
 
 ---
 
-## Hello World
+## Hello World 👋🐀✨
 
 ```python
 from pyratatui import Terminal, Paragraph, Block, Style, Color
@@ -68,27 +48,27 @@ with Terminal() as term:
     while True:
         def ui(frame):
             frame.render_widget(
-                Paragraph.from_string("Hello, pyratatui! 🐀")
-                    .block(Block().bordered().title("Demo"))
+                Paragraph.from_string("Hello, pyratatui! 🐀💖")
+                    .block(Block().bordered().title("Demo 🚀✨"))
                     .style(Style().fg(Color.cyan())),
                 frame.area,
             )
         term.draw(ui)
         ev = term.poll_event(timeout_ms=100)
         if ev and ev.code == "q":
-            break
+            break 🛑
 ```
 
 ---
 
-## Layout + Widgets
+## Layout & Widgets 📊🖌️💎
 
 ```python
 from pyratatui import (
     Terminal, Layout, Constraint, Direction,
     Block, Paragraph, Gauge, List, ListItem, ListState,
     Table, Row, Cell, TableState,
-    Style, Color, Text,
+    Style, Color,
 )
 
 with Terminal() as term:
@@ -99,54 +79,41 @@ with Terminal() as term:
 
     while True:
         def ui(frame):
-            # Split vertically: header | body | footer
-            chunks = (Layout()
-                .direction(Direction.Vertical)
-                .constraints([
-                    Constraint.length(3),
-                    Constraint.fill(1),
-                    Constraint.length(3),
-                ])
-                .split(frame.area))
+            chunks = Layout().direction(Direction.Vertical).constraints([
+                Constraint.length(3),
+                Constraint.fill(1),
+                Constraint.length(3),
+            ]).split(frame.area)
 
-            # Header
-            frame.render_widget(
-                Block().bordered().title("pyratatui Dashboard"),
-                chunks[0],
-            )
+            frame.render_widget(Block().bordered().title("pyratatui Dashboard 📊💡"), chunks[0])
 
-            # Body: split horizontally
-            body = (Layout()
-                .direction(Direction.Horizontal)
-                .constraints([Constraint.percentage(40), Constraint.fill(1)])
-                .split(chunks[1]))
+            body = Layout().direction(Direction.Horizontal).constraints([
+                Constraint.percentage(40), Constraint.fill(1)
+            ]).split(chunks[1])
 
-            # Left: list
-            items = [ListItem(f"Server {i+1}") for i in range(8)]
+            items = [ListItem(f"Server {i+1} ⚡💻") for i in range(8)]
             frame.render_stateful_list(
                 List(items)
-                    .block(Block().bordered().title("Servers"))
+                    .block(Block().bordered().title("Servers 🖥️🌟"))
                     .highlight_style(Style().fg(Color.yellow()).bold())
-                    .highlight_symbol("▶ "),
+                    .highlight_symbol("▶✨"),
                 body[0],
                 list_state,
             )
 
-            # Right: table
-            header = Row([Cell("Name"), Cell("CPU"), Cell("Mem")])
-            rows   = [Row.from_strings(["nginx", "0.2%", "128MB"]),
-                      Row.from_strings(["redis", "0.1%", "64MB"])]
+            header = Row([Cell("Name 🏷️"), Cell("CPU 💻"), Cell("Mem 🧠")])
+            rows = [Row.from_strings(["nginx ⚡", "0.2% 🔹", "128MB 💾"]),
+                    Row.from_strings(["redis ⚡", "0.1% 🔹", "64MB 💾"])]
             frame.render_stateful_table(
-                Table(rows, [Constraint.fill(1)] * 3, header=header)
-                    .block(Block().bordered().title("Processes"))
+                Table(rows, [Constraint.fill(1)]*3, header=header)
+                    .block(Block().bordered().title("Processes 🧮💎"))
                     .highlight_style(Style().fg(Color.cyan())),
                 body[1],
                 table_state,
             )
 
-            # Footer: gauge
             frame.render_widget(
-                Gauge().percent(72).label("CPU: 72%")
+                Gauge().percent(72).label("CPU: 72% 💚⚡")
                     .style(Style().fg(Color.green()))
                     .block(Block().bordered()),
                 chunks[2],
@@ -157,12 +124,12 @@ with Terminal() as term:
         if ev:
             if ev.code == "q": break
             elif ev.code == "Down": list_state.select_next()
-            elif ev.code == "Up":  list_state.select_previous()
+            elif ev.code == "Up": list_state.select_previous()
 ```
 
 ---
 
-## Async Usage
+## Async Usage ⚡💻🚀
 
 ```python
 import asyncio
@@ -174,8 +141,8 @@ async def main():
         async for ev in term.events(fps=30):
             def ui(frame, t=tick):
                 frame.render_widget(
-                    Paragraph.from_string(f"Tick: {t}")
-                        .block(Block().bordered().title("Async"))
+                    Paragraph.from_string(f"Tick: {t} ⏱️✨")
+                        .block(Block().bordered().title("Async 🚀💡"))
                         .style(Style().fg(Color.magenta())),
                     frame.area,
                 )
@@ -187,24 +154,24 @@ asyncio.run(main())
 
 ---
 
-## API Overview
+## API Overview 📚🛠️✨
 
 | Module      | Types                                                                 |
 |-------------|-----------------------------------------------------------------------|
-| style       | `Color`, `Modifier`, `Style`                                         |
-| text        | `Span`, `Line`, `Text`                                               |
-| layout      | `Rect`, `Constraint`, `Direction`, `Alignment`, `Layout`             |
-| buffer      | `Buffer`                                                             |
-| widgets     | `Block`, `Paragraph`, `List`, `Table`, `Gauge`, `LineGauge`, ...     |
-| terminal    | `Terminal`, `Frame`, `KeyEvent`                                      |
-| async       | `AsyncTerminal`, `run_app`, `run_app_async`                          |
-| errors      | `PyratatuiError`, `BackendError`, `LayoutError`, `RenderError`, ...  |
+| style       | `Color`, `Modifier`, `Style` 🖌️💎                                      |
+| text        | `Span`, `Line`, `Text` ✍️✨                                            |
+| layout      | `Rect`, `Constraint`, `Direction`, `Alignment`, `Layout` 🧩💡           |
+| buffer      | `Buffer` 🔹⚡                                                           |
+| widgets     | `Block`, `Paragraph`, `List`, `Table`, `Gauge`, `LineGauge`, ... 🛠️🚀 |
+| terminal    | `Terminal`, `Frame`, `KeyEvent` 🎛️💎                                    |
+| async       | `AsyncTerminal`, `run_app`, `run_app_async` ⚡💻                        |
+| errors      | `PyratatuiError`, `BackendError`, `LayoutError`, `RenderError`, ... ❌🔥|
 
-Full API reference: [https://pyratatui.github.io/pyratatui](https://pyratatui.github.io/pyratatui)
+Full reference: [https://pyratatui.github.io/pyratatui](https://pyratatui.github.io/pyratatui)
 
 ---
 
-## Contributing
+## Contributing 🤝✨💡
 
 ```bash
 git clone https://github.com/pyratatui/pyratatui.git
@@ -213,15 +180,16 @@ python -m venv .venv && source .venv/bin/activate
 pip install maturin pytest pytest-asyncio ruff mypy
 maturin develop
 pytest tests/python/
-cargo test
+cargo test 🚀
 ```
 
 ---
 
-## License
+## License 📜💎
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE)
+
+Built with [ratatui](https://ratatui.rs) 🐀💨 and [PyO3](https://pyo3.rs) 🦀⚡
 
 ---
 
-Built with [ratatui](https://ratatui.rs) 🐀 and [PyO3](https://pyo3.rs) 🦀
