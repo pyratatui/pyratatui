@@ -18,10 +18,10 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Linux manylinux build
+      # Linux: build manylinux wheels with container
       - name: Build Linux manylinux wheels
         if: runner.os == 'Linux'
         uses: PyO3/maturin-action@v1
@@ -31,7 +31,7 @@ jobs:
           manylinux: "2014"
           maturin-version: "1.7.2"
 
-      # macOS & Windows native builds
+      # macOS & Windows: native wheel build
       - name: Build non‑Linux wheels
         if: runner.os != 'Linux'
         run: |
@@ -45,7 +45,7 @@ jobs:
           path: dist/*.whl
 
   release:
-    name: Release with Changelog
+    name: Create Release with Changelog
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -65,11 +65,12 @@ jobs:
         uses: janheinrichmerker/action-github-changelog-generator@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          unreleased-only: true
-          breakingLabels: "breaking,major"
-          bugLabels: "bug,fix"
-          enhancementLabels: "enhancement,feature"
-          securityLabels: "security"
+          unreleasedOnly: true
+          breaking-labels: "breaking,major"
+          bug-labels: "bug,fix"
+          enhancement-labels: "enhancement,feature"
+          security-labels: "security"
+          simpleList: false
 
       - uses: actions/download-artifact@v4
         with:
