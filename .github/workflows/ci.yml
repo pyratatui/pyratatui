@@ -21,7 +21,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Linux: build manylinux wheels with container
+      # Build Linux wheels inside manylinux container
       - name: Build Linux manylinux wheels
         if: runner.os == 'Linux'
         uses: PyO3/maturin-action@v1
@@ -31,8 +31,8 @@ jobs:
           manylinux: "2014"
           maturin-version: "1.7.2"
 
-      # macOS & Windows: native wheel build
-      - name: Build non‑Linux wheels
+      # Build macOS & Windows wheels natively
+      - name: Build non-Linux wheels
         if: runner.os != 'Linux'
         run: |
           python -m pip install --upgrade pip setuptools wheel maturin==1.7.2
@@ -45,7 +45,7 @@ jobs:
           path: dist/*.whl
 
   release:
-    name: Create Release with Changelog
+    name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -54,23 +54,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Extract current version
       - name: Extract version
         id: version
         run: |
           VERSION=$(sed -n 's/^version *= *"\(.*\)"/\1/p' pyproject.toml)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Generate categorized changelog
-        id: changelog
-        uses: janheinrichmerker/action-github-changelog-generator@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          unreleasedOnly: true
-          breaking-labels: "breaking,major"
-          bug-labels: "bug,fix"
-          enhancement-labels: "enhancement,feature"
-          security-labels: "security"
-          simpleList: false
+      # Get previous git tag
+      - name: Get previous tag
+        id: prev
+        run: |
+          PREV=$(git describe --abbrev=0 --tags $(git rev-list --tags --skip=1 --max-count=1) || echo "")
+          echo "previous=$PREV" >> "$GITHUB_OUTPUT"
 
       - uses: actions/download-artifact@v4
         with:
@@ -89,7 +85,9 @@ jobs:
           tag_name: v${{ steps.version.outputs.version }}
           name: v${{ steps.version.outputs.version }}
           body: |
-            ${{ steps.changelog.outputs.changelog }}
+            ### 📜 Full changelog
+            View all changes for this release:
+            https://github.com/${{ github.repository }}/compare/${{ steps.prev.outputs.previous }}...v${{ steps.version.outputs.version }}
           files: |
             dist/*.whl
             dist/SHA256SUMS
