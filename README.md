@@ -1,13 +1,27 @@
-# pyratatui 🐀💎✨🔥
+# 🌟🚀💎 pyratatui 🐍⚡🔥
 
-![PyRatatui Logo](https://github.com/pyratatui/pyratatui/raw/main/gallery/pyratatui.png)
+---
 
-**🐍🚀 Maturin-based Python bindings for [ratatui](https://ratatui.rs) 0.29 🦀⚡😎**
+<img src="https://github.com/pyratatui/pyratatui/raw/main/gallery/pyratatui.png" 
+     alt="PyRatatui Logo" width="100">
 
-![Demo](https://github.com/pyratatui/pyratatui/raw/main/gallery/image.png)
+---
 
-**Partnered with:**
-![Alacritty](https://github.com/pyratatui/pyratatui/raw/main/gallery/alacritty.png)
+**✨🚀💫 Maturin-based Python bindings for [ratatui](https://ratatui.rs) 0.29 🦀🌈🔥**
+
+---
+
+<img src="https://github.com/pyratatui/pyratatui/raw/main/gallery/image.png" 
+     alt="Demo">
+
+---
+
+**💖🌟🌈 Partnered with: Alacritty 🔥⚡✨**  
+
+<img src="https://github.com/pyratatui/pyratatui/raw/main/gallery/alacritty.png" 
+     alt="Alacritty" width="100">
+
+---
 
 [![CI](https://img.shields.io/github/actions/workflow/status/pyratatui/pyratatui/ci.yml?style=for-the-badge)](https://github.com/pyratatui/pyratatui/actions)  
 [![PyPI](https://img.shields.io/pypi/v/pyratatui?style=for-the-badge)](https://pypi.org/project/pyratatui/)  
