@@ -5,12 +5,17 @@ build-backend = "maturin"
 [project]
 name = "pyratatui"
 version = "0.1.0"
-description = "Professional Python bindings for ratatui 0.29 — the high-performance Rust TUI engine"
-authors = [{ name = "pyratatui contributors" }]
+description = "🚀 PyRatatui — Professional Python bindings for ratatui 0.29 🦀 | High-performance Rust TUI engine for building rich terminal applications, interactive CLIs, dashboards, and text-based UIs ✨"
+authors = [{ name = "PyRatatui contributors" }]
 license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.10"
-keywords = ["ratatui", "tui", "terminal", "ui", "cli"]
+keywords = [
+    "ratatui", "tui", "terminal", "cli", "dashboard", "interactive", "text-ui", 
+    "python-rust", "python-bindings", "rich-ui", "ascii-ui", "curses-alternative", 
+    "cross-platform", "high-performance", "async", "widgets", "layout", "panels", 
+    "colors", "themes", "modern-terminal", "terminal-apps", "console", "python-tui"
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -22,8 +27,11 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Rust",
     "Topic :: Software Development :: Libraries :: Python Modules",
-    "Topic :: Terminals",
     "Topic :: Software Development :: User Interfaces",
+    "Topic :: Terminals",
+    "Topic :: Utilities",
+    "Framework :: AsyncIO",
+    "Operating System :: OS Independent"
 ]
 dependencies = []
 
