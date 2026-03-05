@@ -21,38 +21,31 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python for host builds
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.x"
-          cache: "pip"
-
-      # Windows/macOS build with maturin directly
-      - name: Build wheels (host)
-        if: runner.os != 'Linux'
-        run: |
-          python -m pip install --upgrade pip setuptools wheel maturin==1.7.2
-          maturin build --release --strip --out dist
-
-      # Linux: use manylinux container via PyO3/maturin-action
+      # Linux manylinux build
       - name: Build Linux manylinux wheels
         if: runner.os == 'Linux'
         uses: PyO3/maturin-action@v1
         with:
-          # Runs maturin inside a manylinux2014 container
           command: build
-          args: --release --strip
+          args: --release --strip --out dist/
           manylinux: "2014"
           maturin-version: "1.7.2"
 
-      - name: Upload wheels
+      # macOS & Windows native builds
+      - name: Build non‑Linux wheels
+        if: runner.os != 'Linux'
+        run: |
+          python -m pip install --upgrade pip setuptools wheel maturin==1.7.2
+          maturin build --release --strip --out dist/
+
+      - name: Upload wheels artifact
         uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.os }}
           path: dist/*.whl
 
   release:
-    name: Create GitHub Release with Changelog
+    name: Release with Changelog
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -61,22 +54,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Python (for version & changelog)
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.x"
-          cache: "pip"
-
       - name: Extract version
         id: version
         run: |
-          python - << 'EOF'
-          import tomli
-          with open("pyproject.toml","rb") as f:
-              data = tomli.load(f)
-          print("version="+data["project"]["version"])
-          EOF > version.txt
-          echo "version=$(cut -d= -f2 version.txt)" >> $GITHUB_OUTPUT
+          VERSION=$(sed -n 's/^version *= *"\(.*\)"/\1/p' pyproject.toml)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Generate categorized changelog
         id: changelog
