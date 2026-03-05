@@ -18,41 +18,32 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Rust dependency cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          cache-targets: true
-          cache-all-crates: true
-
-      - name: Setup sccache (optional Rust build cache)
-        uses: Mozilla-Actions/sccache-action@v0.0.9
-        with:
-          version: "v0.10.0"
-
-      - name: Enable sccache
-        run: |
-          echo "RUSTC_WRAPPER=$(which sccache)" >> $GITHUB_ENV
-          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Setup Python
+      - name: Set up Python for host builds
         uses: actions/setup-python@v6
         with:
           python-version: "3.x"
           cache: "pip"
 
-      - name: Upgrade pip & install maturin
+      # Windows/macOS build with maturin directly
+      - name: Build wheels (host)
+        if: runner.os != 'Linux'
         run: |
-          python -m pip install --upgrade pip setuptools wheel
-          pip install maturin==1.7.2
+          python -m pip install --upgrade pip setuptools wheel maturin==1.7.2
+          maturin build --release --strip --out dist
 
-      - name: Build Wheels (verbose)
-        run: maturin build --release --strip --out dist --manylinux 2014 --verbose
+      # Linux: use manylinux container via PyO3/maturin-action
+      - name: Build Linux manylinux wheels
+        if: runner.os == 'Linux'
+        uses: PyO3/maturin-action@v1
+        with:
+          # Runs maturin inside a manylinux2014 container
+          command: build
+          args: --release --strip
+          manylinux: "2014"
+          maturin-version: "1.7.2"
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -61,7 +52,7 @@ jobs:
           path: dist/*.whl
 
   release:
-    name: Create GitHub Release (with categorized changelog)
+    name: Create GitHub Release with Changelog
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -70,7 +61,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Python (for version extraction)
+      - name: Setup Python (for version & changelog)
         uses: actions/setup-python@v6
         with:
           python-version: "3.x"
@@ -97,7 +88,6 @@ jobs:
           bugLabels: "bug,fix"
           enhancementLabels: "enhancement,feature"
           securityLabels: "security"
-          simpleList: false
 
       - uses: actions/download-artifact@v4
         with:
@@ -138,6 +128,5 @@ jobs:
           path: dist/
           merge-multiple: true
 
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        
+      - uses: pypa/gh-action-pypi-publish@release/v1
+      
