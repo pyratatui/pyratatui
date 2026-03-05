@@ -43,5 +43,6 @@ pub fn register_widgets(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()>
     clear::register_clear(py, m)?;
     scrollbar::register_scrollbar(py, m)?;
     tabs::register_tabs(py, m)?;
+    canvas_widget::register_canvas(py, m)?;
     Ok(())
 }

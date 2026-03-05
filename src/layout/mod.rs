@@ -266,6 +266,7 @@ pub enum Alignment {
 }
 
 impl Alignment {
+    #[allow(dead_code)]
     pub(crate) fn to_ratatui(&self) -> RAlignment {
         match self {
             Alignment::Left => RAlignment::Left,

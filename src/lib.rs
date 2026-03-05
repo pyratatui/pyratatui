@@ -9,6 +9,7 @@ mod buffer;
 mod effects;
 mod errors;
 mod layout;
+mod prompts;
 mod style;
 mod terminal;
 mod text;
@@ -32,6 +33,7 @@ fn _pyratatui(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     backend::register_backend(py, m)?;
     terminal::register_terminal(py, m)?;
     effects::register_effects(py, m)?;
+    prompts::register_prompts(py, m)?;
 
     // Top-level convenience re-exports.
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;

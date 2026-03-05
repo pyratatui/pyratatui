@@ -86,6 +86,7 @@ nav:
       - Widgets: reference/widgets.md
       - Style & Text: reference/style.md
       - Effects (TachyonFX): reference/effects.md
+      - Prompts: reference/prompts.md
       - Buffer: reference/buffer.md
   - Examples:
       - Minimal Examples: examples/minimal_examples.md

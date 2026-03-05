@@ -11,11 +11,24 @@ The DSL mirrors Rust / tachyonfx syntax and compiles at runtime — ideal for:
 
 Press ↑/↓ to select a DSL demo, Space/Enter to (re-)run it, q to quit.
 """
+
 import time
+
 from pyratatui import (
-    Terminal, Paragraph, Block, Style, Color, Text, Line, Span,
-    Layout, Constraint, Direction,
-    Effect, EffectManager, Interpolation,
+    Block,
+    Color,
+    Constraint,
+    Direction,
+    Effect,
+    EffectManager,
+    Interpolation,
+    Layout,
+    Line,
+    Paragraph,
+    Span,
+    Style,
+    Terminal,
+    Text,
     compile_effect,
 )
 
@@ -60,10 +73,11 @@ for label, dsl in DSL_DEMOS:
 
 # ── State ─────────────────────────────────────────────────────────────────────
 
-index      = 0
-mgr        = EffectManager()
+index = 0
+mgr = EffectManager()
 last_frame = time.monotonic()
-running    = False
+running = False
+
 
 def launch(idx: int) -> None:
     """(Re-)launch the selected effect."""
@@ -77,6 +91,7 @@ def launch(idx: int) -> None:
         running = True
     else:
         running = False
+
 
 # Auto-launch the first demo.
 launch(index)
@@ -92,56 +107,80 @@ with Terminal() as term:
     term.hide_cursor()
 
     while True:
-        now        = time.monotonic()
+        now = time.monotonic()
         elapsed_ms = max(0, int((now - last_frame) * 1000))
         last_frame = now
 
         _elapsed = elapsed_ms
-        _idx     = index
+        _idx = index
 
         def ui(frame, _mgr=mgr, _ms=_elapsed, _i=_idx):
             area = frame.area
-            outer = (Layout()
+            outer = (
+                Layout()
                 .direction(Direction.Vertical)
                 .constraints([Constraint.fill(1), Constraint.length(1)])
-                .split(area))
+                .split(area)
+            )
 
-            body = (Layout()
+            body = (
+                Layout()
                 .direction(Direction.Horizontal)
                 .constraints([Constraint.percentage(40), Constraint.fill(1)])
-                .split(outer[0]))
+                .split(outer[0])
+            )
 
             # ── Left: effect selector ──────────────────────────────────
             items_lines = []
             for i, (lbl, _, ok, _err) in enumerate(compiled):
-                marker  = "▶ " if i == _i else "  "
-                status  = "✓" if ok else "✗"
-                color   = Color.green() if ok else Color.red()
+                marker = "▶ " if i == _i else "  "
+                status = "✓" if ok else "✗"
+                color = Color.green() if ok else Color.red()
                 sel_col = Color.yellow() if i == _i else Color.white()
-                items_lines.append(Line([
-                    Span(marker, Style().fg(Color.cyan())),
-                    Span(f"{status} ", Style().fg(color)),
-                    Span(lbl, Style().fg(sel_col).bold() if i == _i
-                         else Style().fg(sel_col)),
-                ]))
+                items_lines.append(
+                    Line(
+                        [
+                            Span(marker, Style().fg(Color.cyan())),
+                            Span(f"{status} ", Style().fg(color)),
+                            Span(
+                                lbl,
+                                (
+                                    Style().fg(sel_col).bold()
+                                    if i == _i
+                                    else Style().fg(sel_col)
+                                ),
+                            ),
+                        ]
+                    )
+                )
 
             frame.render_widget(
-                Paragraph(Text(items_lines))
-                    .block(Block().bordered().title(" DSL Effects  ↑/↓ select  Space run ")),
-                body[0])
+                Paragraph(Text(items_lines)).block(
+                    Block().bordered().title(" DSL Effects  ↑/↓ select  Space run ")
+                ),
+                body[0],
+            )
 
             # ── Right: preview + DSL source ───────────────────────────
             label, _, ok, err = compiled[_i]
             _, dsl_src = DSL_DEMOS[_i]
-            status_span = Span("✓ compiled", Style().fg(Color.green())) if ok \
-                          else Span(f"✗ {err}", Style().fg(Color.red()))
+            status_span = (
+                Span("✓ compiled", Style().fg(Color.green()))
+                if ok
+                else Span(f"✗ {err}", Style().fg(Color.red()))
+            )
 
-            src_lines = [Line([Span(l, Style().fg(Color.gray()))])
-                         for l in dsl_src.strip().splitlines()]
+            src_lines = [
+                Line([Span(l, Style().fg(Color.gray()))])
+                for l in dsl_src.strip().splitlines()
+            ]
 
             preview_lines = [
                 Line([Span("Preview:", Style().fg(Color.cyan()).bold())]),
-                *[Line([Span(l, Style().fg(Color.white()))]) for l in PREVIEW_TEXT.splitlines()],
+                *[
+                    Line([Span(l, Style().fg(Color.white()))])
+                    for l in PREVIEW_TEXT.splitlines()
+                ],
                 Line([]),
                 Line([Span("Status: ", Style().bold()), status_span]),
                 Line([]),
@@ -151,10 +190,13 @@ with Terminal() as term:
 
             # Render the preview text — effects will transform these cells.
             frame.render_widget(
-                Paragraph(Text(preview_lines))
-                    .block(Block().bordered()
-                           .title(f" Effect {_i+1}/{len(compiled)}: {label} ")),
-                body[1])
+                Paragraph(Text(preview_lines)).block(
+                    Block()
+                    .bordered()
+                    .title(f" Effect {_i+1}/{len(compiled)}: {label} ")
+                ),
+                body[1],
+            )
 
             # Apply effects to the right panel only.
             frame.apply_effect_manager(_mgr, _ms, body[1])
@@ -163,7 +205,8 @@ with Terminal() as term:
                 Paragraph.from_string(
                     " ↑/↓: select   Space/Enter: run   q: quit"
                 ).style(Style().fg(Color.dark_gray())),
-                outer[1])
+                outer[1],
+            )
 
         term.draw(ui)
 

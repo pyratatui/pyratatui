@@ -19,6 +19,7 @@ use ratatui::{backend::CrosstermBackend, Frame as RFrame, Terminal as RTerminal}
 use crate::effects::{Effect as PyEffect, EffectManager as PyEffectManager};
 use crate::errors::{io_err_to_py, render_err_to_py};
 use crate::layout::Rect;
+use crate::prompts::{PasswordPrompt, TextPrompt, TextState};
 use crate::widgets::{
     BarChart, Block, Clear, Gauge, LineGauge, List, ListState, Paragraph, Scrollbar,
     ScrollbarState, Sparkline, Table, TableState, Tabs,
@@ -44,7 +45,7 @@ pub struct PyKeyEvent {
     pub shift: bool,
 }
 
-fn key_code_str(kc: &KeyCode) -> String {
+pub(crate) fn key_code_str(kc: &KeyCode) -> String {
     match kc {
         KeyCode::Char(c) => c.to_string(),
         KeyCode::Enter => "Enter".into(),
@@ -237,6 +238,33 @@ impl Frame {
         let buf = unsafe { &mut *self.buffer_mut_ptr() };
         manager.process_raw(elapsed_ms, buf, area.inner);
     }
+
+    /// Render a [`TextPrompt`] with the given [`TextState`] into `area`.
+    ///
+    /// Call this **inside** a `term.draw(ui)` callback:
+    ///
+    /// ```python
+    /// def ui(frame):
+    ///     frame.render_text_prompt(TextPrompt("Name: "), frame.area, state)
+    /// ```
+    pub fn render_text_prompt(&mut self, prompt: &TextPrompt, area: &Rect, state: &TextState) {
+        prompt.render_raw(self.get(), area.inner, state);
+    }
+
+    /// Render a [`PasswordPrompt`] with the given [`TextState`] into `area`.
+    ///
+    /// ```python
+    /// def ui(frame):
+    ///     frame.render_password_prompt(PasswordPrompt("Password: "), frame.area, state)
+    /// ```
+    pub fn render_password_prompt(
+        &mut self,
+        prompt: &PasswordPrompt,
+        area: &Rect,
+        state: &TextState,
+    ) {
+        prompt.render_raw(self.get(), area.inner, state);
+    }
 }
 
 impl Frame {
@@ -353,11 +381,17 @@ impl Terminal {
             PyRuntimeError::new_err("Terminal not initialised — use `with Terminal() as t:`")
         })?;
 
-        // Safety: the Frame pointer is only used inside this closure, which
-        // completes before `draw` returns, so the reference is valid.
+        // Safety: the Frame pointer is only dereferenced inside this closure,
+        // which completes before `draw` returns, so `'1` is always valid.
+        // `*mut RFrame` is invariant over its lifetime parameter, so we use
+        // transmute to reinterpret the lifetime rather than a plain cast.
         term.draw(|frame| {
             let py_frame = Frame {
-                ptr: frame as *mut RFrame<'_> as *mut RFrame<'static>,
+                ptr: unsafe {
+                    std::mem::transmute::<*mut RFrame<'_>, *mut RFrame<'static>>(
+                        frame as *mut RFrame<'_>,
+                    )
+                },
             };
             Python::with_gil(|py| {
                 if let Ok(obj) = Py::new(py, py_frame) {
@@ -383,21 +417,19 @@ impl Terminal {
     pub fn poll_event(&self, timeout_ms: u64) -> PyResult<Option<PyKeyEvent>> {
         let timeout = std::time::Duration::from_millis(timeout_ms);
         if event::poll(timeout).map_err(io_err_to_py)? {
-            match event::read().map_err(io_err_to_py)? {
-                Event::Key(KeyEvent {
-                    code,
-                    modifiers,
-                    kind: KeyEventKind::Press,
-                    ..
-                }) => {
-                    return Ok(Some(PyKeyEvent {
-                        code: key_code_str(&code),
-                        ctrl: modifiers.contains(KeyModifiers::CONTROL),
-                        alt: modifiers.contains(KeyModifiers::ALT),
-                        shift: modifiers.contains(KeyModifiers::SHIFT),
-                    }));
-                }
-                _ => {}
+            if let Event::Key(KeyEvent {
+                code,
+                modifiers,
+                kind: KeyEventKind::Press,
+                ..
+            }) = event::read().map_err(io_err_to_py)?
+            {
+                return Ok(Some(PyKeyEvent {
+                    code: key_code_str(&code),
+                    ctrl: modifiers.contains(KeyModifiers::CONTROL),
+                    alt: modifiers.contains(KeyModifiers::ALT),
+                    shift: modifiers.contains(KeyModifiers::SHIFT),
+                }));
             }
         }
         Ok(None)

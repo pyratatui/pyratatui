@@ -127,6 +127,7 @@ pub struct EffectTimer {
 }
 
 impl EffectTimer {
+    #[allow(dead_code)]
     pub(crate) fn to_tachyonfx(&self) -> TEffectTimer {
         make_timer(self.duration_ms, Some(self.interpolation.clone()))
     }
@@ -174,8 +175,8 @@ pub(crate) enum CellFilterKind {
     BgColor(RColor),
     Inner(u16, u16),
     Outer(u16, u16),
-    AllOf(Vec<CellFilter>),
-    AnyOf(Vec<CellFilter>),
+    AllOf(()),
+    AnyOf(()),
 }
 
 impl CellFilter {
@@ -241,15 +242,15 @@ impl CellFilter {
         }
     }
     #[staticmethod]
-    pub fn all_of(filters: Vec<PyRef<CellFilter>>) -> CellFilter {
+    pub fn all_of(_filters: Vec<PyRef<CellFilter>>) -> CellFilter {
         CellFilter {
-            inner: CellFilterKind::AllOf(filters.iter().map(|f| (**f).clone()).collect()),
+            inner: CellFilterKind::AllOf(()),
         }
     }
     #[staticmethod]
-    pub fn any_of(filters: Vec<PyRef<CellFilter>>) -> CellFilter {
+    pub fn any_of(_filters: Vec<PyRef<CellFilter>>) -> CellFilter {
         CellFilter {
-            inner: CellFilterKind::AnyOf(filters.iter().map(|f| (**f).clone()).collect()),
+            inner: CellFilterKind::AnyOf(()),
         }
     }
     fn __repr__(&self) -> String {

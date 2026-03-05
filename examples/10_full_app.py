@@ -12,37 +12,56 @@ Demonstrates: All major pyratatui features in a single production-quality app.
 
 ↑/↓: navigate  Tab: switch tab  r: refresh  q: quit
 """
+
 import asyncio
 import math
 import random
 import time
+
 from pyratatui import (
     AsyncTerminal,
-    Layout, Constraint, Direction,
-    Block, Paragraph,
-    List, ListItem, ListState,
-    Table, Row, Cell, TableState,
-    Gauge, LineGauge, Sparkline,
-    BarChart, BarGroup, Bar,
-    Tabs,
-    Style, Color,
-    Text, Line, Span,
+    Bar,
+    BarChart,
+    BarGroup,
+    Block,
     BorderType,
-    Effect, EffectManager, Interpolation,
+    Cell,
+    Color,
+    Constraint,
+    Direction,
+    Effect,
+    EffectManager,
+    Gauge,
+    Interpolation,
+    Layout,
+    Line,
+    LineGauge,
+    List,
+    ListItem,
+    ListState,
+    Paragraph,
+    Row,
+    Span,
+    Sparkline,
+    Style,
+    Table,
+    TableState,
+    Tabs,
+    Text,
 )
 
 # ── Shared state ───────────────────────────────────────────────────────────────
 
 app = {
-    "tab":        0,
+    "tab": 0,
     "list_state": ListState(),
-    "table_state":TableState(),
-    "services":   [],
-    "metrics":    {"cpu": 0, "mem": 0, "reqs": 0},
-    "cpu_hist":   [0] * 30,
-    "log":        [],
-    "tick":       0,
-    "started":    time.time(),
+    "table_state": TableState(),
+    "services": [],
+    "metrics": {"cpu": 0, "mem": 0, "reqs": 0},
+    "cpu_hist": [0] * 30,
+    "log": [],
+    "tick": 0,
+    "started": time.time(),
 }
 
 app["list_state"].select(0)
@@ -50,27 +69,37 @@ app["table_state"].select(0)
 
 SERVICES = ["nginx", "postgres", "redis", "kafka", "prometheus", "alertmanager"]
 
+
 def fresh_services():
     return [
         {
-            "name":   s,
-            "cpu":    random.randint(0, 100),
-            "mem":    random.randint(5, 95),
-            "status": random.choice(["Running"]*4 + ["Degraded", "Stopped"]),
+            "name": s,
+            "cpu": random.randint(0, 100),
+            "mem": random.randint(5, 95),
+            "status": random.choice(["Running"] * 4 + ["Degraded", "Stopped"]),
             "uptime": f"{random.randint(1, 999)}h",
         }
         for s in SERVICES
     ]
 
+
 app["services"] = fresh_services()
+
 
 def cpu_color(p):
     return Color.green() if p < 50 else Color.yellow() if p < 80 else Color.red()
 
+
 def status_color(s):
-    return {"Running": Color.green(), "Degraded": Color.yellow(), "Stopped": Color.red()}.get(s, Color.white())
+    return {
+        "Running": Color.green(),
+        "Degraded": Color.yellow(),
+        "Stopped": Color.red(),
+    }.get(s, Color.white())
+
 
 # ── Background task ────────────────────────────────────────────────────────────
+
 
 async def update_metrics():
     while True:
@@ -87,98 +116,153 @@ async def update_metrics():
             app["log"].append(f"[{ts}] tick={t}  cpu={app['metrics']['cpu']}%")
             app["log"] = app["log"][-8:]
 
+
 # ── UI renderers ──────────────────────────────────────────────────────────────
 
+
 def render_overview(frame, area):
-    panels = (Layout()
+    panels = (
+        Layout()
         .direction(Direction.Vertical)
         .constraints([Constraint.length(3), Constraint.length(5), Constraint.fill(1)])
-        .split(area))
+        .split(area)
+    )
 
     m = app["metrics"]
     frame.render_widget(
-        Gauge().percent(m["cpu"])
-            .label(f"CPU: {m['cpu']}%")
-            .style(Style().fg(cpu_color(m["cpu"])))
-            .gauge_style(Style().fg(Color.dark_gray()))
-            .block(Block().bordered().title("CPU Usage")),
-        panels[0])
+        Gauge()
+        .percent(m["cpu"])
+        .label(f"CPU: {m['cpu']}%")
+        .style(Style().fg(cpu_color(m["cpu"])))
+        .gauge_style(Style().fg(Color.dark_gray()))
+        .block(Block().bordered().title("CPU Usage")),
+        panels[0],
+    )
 
     frame.render_widget(
-        Sparkline().data(app["cpu_hist"]).max(100)
-            .style(Style().fg(cpu_color(m["cpu"])))
-            .block(Block().bordered().title("CPU History (30 ticks)")),
-        panels[1])
+        Sparkline()
+        .data(app["cpu_hist"])
+        .max(100)
+        .style(Style().fg(cpu_color(m["cpu"])))
+        .block(Block().bordered().title("CPU History (30 ticks)")),
+        panels[1],
+    )
 
-    body = (Layout()
+    body = (
+        Layout()
         .direction(Direction.Horizontal)
         .constraints([Constraint.percentage(50), Constraint.fill(1)])
-        .split(panels[2]))
+        .split(panels[2])
+    )
 
     bars = [
         Bar(s["cpu"], s["name"][:6]).style(Style().fg(cpu_color(s["cpu"])))
         for s in app["services"]
     ]
     frame.render_widget(
-        BarChart().data(BarGroup(bars, "CPU %")).bar_width(5).bar_gap(1).max(100)
-            .value_style(Style().fg(Color.white()).bold())
-            .label_style(Style().fg(Color.dark_gray()))
-            .block(Block().bordered().title("Per-Service CPU")),
-        body[0])
+        BarChart()
+        .data(BarGroup(bars, "CPU %"))
+        .bar_width(5)
+        .bar_gap(1)
+        .max(100)
+        .value_style(Style().fg(Color.white()).bold())
+        .label_style(Style().fg(Color.dark_gray()))
+        .block(Block().bordered().title("Per-Service CPU")),
+        body[0],
+    )
 
     frame.render_widget(
-        Paragraph(Text([
-            Line([Span("Requests: ", Style().bold()),
-                  Span(f"{m['reqs']:,}", Style().fg(Color.cyan()))]),
-            Line([Span("Memory:   ", Style().bold()),
-                  Span(f"{m['mem']}%", Style().fg(cpu_color(m["mem"])))]),
-            Line([Span("Uptime:   ", Style().bold()),
-                  Span(f"{time.time()-app['started']:.0f}s", Style().fg(Color.green()))]),
-            Line([]),
-            *[Line([Span(l, Style().fg(Color.gray()))]) for l in app["log"][-4:]],
-        ])).block(Block().bordered().title("Stats & Log")),
-        body[1])
+        Paragraph(
+            Text(
+                [
+                    Line(
+                        [
+                            Span("Requests: ", Style().bold()),
+                            Span(f"{m['reqs']:,}", Style().fg(Color.cyan())),
+                        ]
+                    ),
+                    Line(
+                        [
+                            Span("Memory:   ", Style().bold()),
+                            Span(f"{m['mem']}%", Style().fg(cpu_color(m["mem"]))),
+                        ]
+                    ),
+                    Line(
+                        [
+                            Span("Uptime:   ", Style().bold()),
+                            Span(
+                                f"{time.time()-app['started']:.0f}s",
+                                Style().fg(Color.green()),
+                            ),
+                        ]
+                    ),
+                    Line([]),
+                    *[
+                        Line([Span(l, Style().fg(Color.gray()))])
+                        for l in app["log"][-4:]
+                    ],
+                ]
+            )
+        ).block(Block().bordered().title("Stats & Log")),
+        body[1],
+    )
 
 
 def render_services(frame, area):
-    panels = (Layout()
+    panels = (
+        Layout()
         .direction(Direction.Horizontal)
         .constraints([Constraint.percentage(45), Constraint.fill(1)])
-        .split(area))
+        .split(area)
+    )
 
     items = [
         ListItem(
             f"{'● ' if s['status']=='Running' else '● '}{s['name']:14s}  {s['cpu']:3d}%",
-            Style().fg(status_color(s["status"]))
+            Style().fg(status_color(s["status"])),
         )
         for s in app["services"]
     ]
     frame.render_stateful_list(
-        List(items).block(Block().bordered().title("Services")
-                         .border_type(BorderType.Rounded))
-            .highlight_style(Style().fg(Color.yellow()).bold())
-            .highlight_symbol("▶ "),
-        panels[0], app["list_state"])
+        List(items)
+        .block(Block().bordered().title("Services").border_type(BorderType.Rounded))
+        .highlight_style(Style().fg(Color.yellow()).bold())
+        .highlight_symbol("▶ "),
+        panels[0],
+        app["list_state"],
+    )
 
-    hdr = Row([Cell(h).style(Style().bold()) for h in ["Service","CPU","MEM","Status","Uptime"]])
+    hdr = Row(
+        [
+            Cell(h).style(Style().bold())
+            for h in ["Service", "CPU", "MEM", "Status", "Uptime"]
+        ]
+    )
     rows = [
-        Row([
-            Cell(s["name"]),
-            Cell(f"{s['cpu']}%").style(Style().fg(cpu_color(s["cpu"]))),
-            Cell(f"{s['mem']}%").style(Style().fg(cpu_color(s["mem"]))),
-            Cell(s["status"]).style(Style().fg(status_color(s["status"]))),
-            Cell(s["uptime"]),
-        ])
+        Row(
+            [
+                Cell(s["name"]),
+                Cell(f"{s['cpu']}%").style(Style().fg(cpu_color(s["cpu"]))),
+                Cell(f"{s['mem']}%").style(Style().fg(cpu_color(s["mem"]))),
+                Cell(s["status"]).style(Style().fg(status_color(s["status"]))),
+                Cell(s["uptime"]),
+            ]
+        )
         for s in app["services"]
     ]
     frame.render_stateful_table(
-        Table(rows, [Constraint.fill(1)]*5, header=hdr)
-            .block(Block().bordered().title("Process Table")
-                   .border_type(BorderType.Rounded))
-            .highlight_style(Style().fg(Color.cyan()).bold()),
-        panels[1], app["table_state"])
+        Table(rows, [Constraint.fill(1)] * 5, header=hdr)
+        .block(
+            Block().bordered().title("Process Table").border_type(BorderType.Rounded)
+        )
+        .highlight_style(Style().fg(Color.cyan()).bold()),
+        panels[1],
+        app["table_state"],
+    )
+
 
 # ── Main ─────────────────────────────────────────────────────────────────────
+
 
 async def main():
     metrics_task = asyncio.create_task(update_metrics())
@@ -186,23 +270,31 @@ async def main():
     async with AsyncTerminal() as term:
         term.hide_cursor()
         async for ev in term.events(fps=25, stop_on_quit=False):
-            tab   = app["tab"]
+            tab = app["tab"]
 
             def ui(frame, _tab=tab):
                 area = frame.area
-                outer = (Layout()
+                outer = (
+                    Layout()
                     .direction(Direction.Vertical)
-                    .constraints([Constraint.length(3), Constraint.fill(1), Constraint.length(1)])
-                    .split(area))
+                    .constraints(
+                        [Constraint.length(3), Constraint.fill(1), Constraint.length(1)]
+                    )
+                    .split(area)
+                )
 
                 frame.render_widget(
                     Tabs(["Overview", "Services"])
-                        .select(_tab)
-                        .block(Block().bordered()
-                               .title(f" pyratatui Full App  ·  tick={app['tick']} "))
-                        .highlight_style(Style().fg(Color.cyan()).bold())
-                        .style(Style().fg(Color.dark_gray())),
-                    outer[0])
+                    .select(_tab)
+                    .block(
+                        Block()
+                        .bordered()
+                        .title(f" pyratatui Full App  ·  tick={app['tick']} ")
+                    )
+                    .highlight_style(Style().fg(Color.cyan()).bold())
+                    .style(Style().fg(Color.dark_gray())),
+                    outer[0],
+                )
 
                 if _tab == 0:
                     render_overview(frame, outer[1])
@@ -213,7 +305,8 @@ async def main():
                     Paragraph.from_string(
                         " ↑/↓: Navigate  Tab: Switch tab  r: Refresh  q: Quit"
                     ).style(Style().fg(Color.dark_gray())),
-                    outer[2])
+                    outer[2],
+                )
 
             term.draw(ui)
 

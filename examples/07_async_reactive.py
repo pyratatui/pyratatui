@@ -3,14 +3,25 @@ examples/07_async_reactive.py — Async reactive UI with background data fetchin
 
 Demonstrates: AsyncTerminal, asyncio tasks, reactive data updates, live counter.
 """
+
 import asyncio
 import random
 import time
+
 from pyratatui import (
     AsyncTerminal,
-    Layout, Constraint, Direction,
-    Block, Paragraph, Gauge, Sparkline,
-    Style, Color, Text, Line, Span,
+    Block,
+    Color,
+    Constraint,
+    Direction,
+    Gauge,
+    Layout,
+    Line,
+    Paragraph,
+    Span,
+    Sparkline,
+    Style,
+    Text,
 )
 
 # Shared state (updated by background task)
@@ -53,74 +64,109 @@ async def main():
             log = list(state["log"])
             tick = state["tick"]
 
-            def ui(frame, _cpu=cpu, _mem=mem, _reqs=reqs, _hist=hist, _log=log, _tick=tick):
+            def ui(
+                frame, _cpu=cpu, _mem=mem, _reqs=reqs, _hist=hist, _log=log, _tick=tick
+            ):
                 area = frame.area
-                outer = (Layout()
+                outer = (
+                    Layout()
                     .direction(Direction.Vertical)
-                    .constraints([
-                        Constraint.length(3),
-                        Constraint.length(3),
-                        Constraint.length(5),
-                        Constraint.fill(1),
-                        Constraint.length(1),
-                    ])
-                    .split(area))
+                    .constraints(
+                        [
+                            Constraint.length(3),
+                            Constraint.length(3),
+                            Constraint.length(5),
+                            Constraint.fill(1),
+                            Constraint.length(1),
+                        ]
+                    )
+                    .split(area)
+                )
 
-                cpu_color = (Color.green() if _cpu < 50 else
-                             Color.yellow() if _cpu < 80 else Color.red())
+                cpu_color = (
+                    Color.green()
+                    if _cpu < 50
+                    else Color.yellow() if _cpu < 80 else Color.red()
+                )
 
                 # CPU gauge
                 frame.render_widget(
-                    Gauge().percent(_cpu)
-                        .label(f"CPU: {_cpu}%  (tick {_tick})")
-                        .style(Style().fg(cpu_color))
-                        .gauge_style(Style().fg(Color.dark_gray()))
-                        .block(Block().bordered().title("CPU")),
-                    outer[0])
+                    Gauge()
+                    .percent(_cpu)
+                    .label(f"CPU: {_cpu}%  (tick {_tick})")
+                    .style(Style().fg(cpu_color))
+                    .gauge_style(Style().fg(Color.dark_gray()))
+                    .block(Block().bordered().title("CPU")),
+                    outer[0],
+                )
 
                 # MEM gauge
                 frame.render_widget(
-                    Gauge().percent(_mem)
-                        .label(f"MEM: {_mem}%")
-                        .style(Style().fg(Color.blue()))
-                        .gauge_style(Style().fg(Color.dark_gray()))
-                        .block(Block().bordered().title("Memory")),
-                    outer[1])
+                    Gauge()
+                    .percent(_mem)
+                    .label(f"MEM: {_mem}%")
+                    .style(Style().fg(Color.blue()))
+                    .gauge_style(Style().fg(Color.dark_gray()))
+                    .block(Block().bordered().title("Memory")),
+                    outer[1],
+                )
 
                 # Sparkline
                 frame.render_widget(
                     Sparkline()
-                        .data([int(h) for h in _hist])
-                        .max(100)
-                        .style(Style().fg(cpu_color))
-                        .block(Block().bordered().title("CPU History")),
-                    outer[2])
+                    .data([int(h) for h in _hist])
+                    .max(100)
+                    .style(Style().fg(cpu_color))
+                    .block(Block().bordered().title("CPU History")),
+                    outer[2],
+                )
 
                 # Metrics + log
-                body = (Layout()
+                body = (
+                    Layout()
                     .direction(Direction.Horizontal)
                     .constraints([Constraint.percentage(40), Constraint.fill(1)])
-                    .split(outer[3]))
+                    .split(outer[3])
+                )
 
                 frame.render_widget(
-                    Paragraph(Text([
-                        Line([Span("Requests: ", Style().bold()),
-                              Span(str(_reqs), Style().fg(Color.cyan()))]),
-                        Line([Span("Uptime:   ", Style().bold()),
-                              Span(f"{_tick * 0.3:.1f}s", Style().fg(Color.green()))]),
-                    ])).block(Block().bordered().title("Stats")),
-                    body[0])
+                    Paragraph(
+                        Text(
+                            [
+                                Line(
+                                    [
+                                        Span("Requests: ", Style().bold()),
+                                        Span(str(_reqs), Style().fg(Color.cyan())),
+                                    ]
+                                ),
+                                Line(
+                                    [
+                                        Span("Uptime:   ", Style().bold()),
+                                        Span(
+                                            f"{_tick * 0.3:.1f}s",
+                                            Style().fg(Color.green()),
+                                        ),
+                                    ]
+                                ),
+                            ]
+                        )
+                    ).block(Block().bordered().title("Stats")),
+                    body[0],
+                )
 
                 frame.render_widget(
                     Paragraph.from_string("\n".join(_log) or "(waiting…)")
-                        .block(Block().bordered().title("Log"))
-                        .style(Style().fg(Color.gray())),
-                    body[1])
+                    .block(Block().bordered().title("Log"))
+                    .style(Style().fg(Color.gray())),
+                    body[1],
+                )
 
                 frame.render_widget(
-                    Paragraph.from_string(" q: Quit  (auto-refreshing)")
-                        .style(Style().fg(Color.dark_gray())),
-                    outer[4])
+                    Paragraph.from_string(" q: Quit  (auto-refreshing)").style(
+                        Style().fg(Color.dark_gray())
+                    ),
+                    outer[4],
+                )
 
             term.draw(ui)
 

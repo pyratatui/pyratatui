@@ -7,9 +7,9 @@ These allow a dead-simple entry point similar to ratatui's `ratatui::run()`.
 from __future__ import annotations
 
 import asyncio
-from typing import Callable, Awaitable, Optional
+from typing import Awaitable, Callable, Optional
 
-from ._pyratatui import Terminal, Frame
+from ._pyratatui import Frame, Terminal
 from .async_terminal import AsyncTerminal
 
 

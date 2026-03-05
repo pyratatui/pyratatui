@@ -21,7 +21,7 @@
 
 ---
 
-<img src="https://github.com/pyratatui/pyratatui/raw/main/gallery/image.png" 
+<img src="https://github.com/pyratatui/pyratatui/raw/main/gallery/dashboard.png" 
      alt="Demo">
 
 ---

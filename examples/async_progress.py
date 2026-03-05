@@ -12,10 +12,18 @@ import time
 
 from pyratatui import (
     AsyncTerminal,
-    Layout, Constraint, Direction,
-    Block, Paragraph, Gauge, LineGauge,
-    Style, Color,
-    Text, Line, Span,
+    Block,
+    Color,
+    Constraint,
+    Direction,
+    Gauge,
+    Layout,
+    Line,
+    LineGauge,
+    Paragraph,
+    Span,
+    Style,
+    Text,
 )
 
 
@@ -62,25 +70,37 @@ async def main() -> None:
                 chunks = (
                     Layout()
                     .direction(Direction.Vertical)
-                    .constraints([
-                        Constraint.length(3),  # title
-                        Constraint.length(3),  # main gauge
-                        Constraint.length(3),  # line gauge
-                        Constraint.fill(1),    # log
-                        Constraint.length(1),  # footer
-                    ])
+                    .constraints(
+                        [
+                            Constraint.length(3),  # title
+                            Constraint.length(3),  # main gauge
+                            Constraint.length(3),  # line gauge
+                            Constraint.fill(1),  # log
+                            Constraint.length(1),  # footer
+                        ]
+                    )
                     .split(area)
                 )
 
                 # ── Title ───────────────────────────────────────────────
                 frame.render_widget(
                     Paragraph(
-                        Text([
-                            Line([
-                                Span("pyratatui ", Style().fg(Color.cyan()).bold()),
-                                Span("Async Progress Demo", Style().fg(Color.white())),
-                            ])
-                        ])
+                        Text(
+                            [
+                                Line(
+                                    [
+                                        Span(
+                                            "pyratatui ",
+                                            Style().fg(Color.cyan()).bold(),
+                                        ),
+                                        Span(
+                                            "Async Progress Demo",
+                                            Style().fg(Color.white()),
+                                        ),
+                                    ]
+                                )
+                            ]
+                        )
                     ).block(Block().bordered()),
                     chunks[0],
                 )
@@ -88,22 +108,22 @@ async def main() -> None:
                 # ── Block gauge ──────────────────────────────────────────
                 frame.render_widget(
                     Gauge()
-                        .percent(_pct)
-                        .label(f"{_msg}  ({_pct}%)")
-                        .style(Style().fg(Color.green()))
-                        .gauge_style(Style().fg(Color.dark_gray()))
-                        .block(Block().bordered().title("Overall Progress")),
+                    .percent(_pct)
+                    .label(f"{_msg}  ({_pct}%)")
+                    .style(Style().fg(Color.green()))
+                    .gauge_style(Style().fg(Color.dark_gray()))
+                    .block(Block().bordered().title("Overall Progress")),
                     chunks[1],
                 )
 
                 # ── Line gauge ───────────────────────────────────────────
                 frame.render_widget(
                     LineGauge()
-                        .percent(_pct)
-                        .style(Style().fg(Color.blue()))
-                        .gauge_style(Style().fg(Color.dark_gray()))
-                        .line_set("thick")
-                        .label(f"Step {_step}/{total_steps}"),
+                    .percent(_pct)
+                    .style(Style().fg(Color.blue()))
+                    .gauge_style(Style().fg(Color.dark_gray()))
+                    .line_set("thick")
+                    .label(f"Step {_step}/{total_steps}"),
                     chunks[2],
                 )
 
@@ -111,15 +131,16 @@ async def main() -> None:
                 log_text = Text.from_string("\n".join(_log) if _log else "(no log yet)")
                 frame.render_widget(
                     Paragraph(log_text)
-                        .block(Block().bordered().title("Log"))
-                        .style(Style().fg(Color.gray())),
+                    .block(Block().bordered().title("Log"))
+                    .style(Style().fg(Color.gray())),
                     chunks[3],
                 )
 
                 # ── Footer ──────────────────────────────────────────────
                 frame.render_widget(
-                    Paragraph.from_string(" q: Quit")
-                        .style(Style().fg(Color.dark_gray())),
+                    Paragraph.from_string(" q: Quit").style(
+                        Style().fg(Color.dark_gray())
+                    ),
                     chunks[4],
                 )
 

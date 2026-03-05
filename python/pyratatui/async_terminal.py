@@ -28,9 +28,11 @@ from __future__ import annotations
 
 import asyncio
 import time
-from typing import Callable, Optional, AsyncIterator
+from typing import AsyncIterator, Callable, Optional
 
-from ._pyratatui import Terminal, Frame, PyKeyEvent as KeyEvent
+from ._pyratatui import Frame
+from ._pyratatui import PyKeyEvent as KeyEvent
+from ._pyratatui import Terminal
 
 
 class AsyncTerminal:

@@ -20,8 +20,6 @@ pub struct Sparkline {
     block: Option<Block>,
     max: Option<u64>,
     style: Option<Style>,
-    bar_set: String,
-    direction: String,
 }
 
 impl Sparkline {
@@ -49,8 +47,6 @@ impl Sparkline {
             block: None,
             max: None,
             style: None,
-            bar_set: "braille".into(),
-            direction: "left_to_right".into(),
         }
     }
     pub fn data(&self, data: Vec<u64>) -> Sparkline {

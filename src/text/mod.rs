@@ -187,7 +187,7 @@ impl Text {
     #[staticmethod]
     pub fn from_string(s: &str) -> Text {
         Text {
-            lines: s.lines().map(|l| Line::from_string(l)).collect(),
+            lines: s.lines().map(Line::from_string).collect(),
             alignment: None,
             style: None,
         }
