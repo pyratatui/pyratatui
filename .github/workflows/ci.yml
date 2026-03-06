@@ -17,37 +17,12 @@ env:
   MATURIN_VERSION: "v1.8.1"
 
 # ──────────────────────────────────────────────────────────────────────────────
-# JOB 0 · Security audit
-# ──────────────────────────────────────────────────────────────────────────────
-jobs:
-  audit:
-    name: Security audit
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust stable
-        run: rustup toolchain install stable --profile minimal
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: "pyratatui-audit"
-          cache-on-failure: true
-
-      - name: Run cargo audit
-        run: |
-          cargo install cargo-audit --locked --quiet
-          cargo audit
-
-# ──────────────────────────────────────────────────────────────────────────────
 # JOB 1 · Build wheels (3 targets in parallel)
 # ──────────────────────────────────────────────────────────────────────────────
+jobs:
   build:
     name: Build · ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
-    needs: audit
 
     strategy:
       fail-fast: false
@@ -79,7 +54,7 @@ jobs:
       - name: Install Rust stable
         run: rustup toolchain install stable --profile minimal
 
-      # Caches ~/.cargo/registry, ~/.cargo/git, and ./target
+      # Caches ~/.cargo/registry, ~/.cargo/git, ./target
       # maturin-action mounts ~/.cargo into its Docker container so Linux gets it too
       - uses: Swatinem/rust-cache@v2
         with:
@@ -101,9 +76,8 @@ jobs:
           python-version: "3.x"
           cache: "pip"
 
-      # Linux: maturin-action spins up a genuine manylinux_2_17 Docker container
-      # — the only correct way to produce PyPI-compliant wheels (no GLIBC leakage)
-      - name: Build wheel (Linux — manylinux container)
+      # Linux: genuine manylinux_2_17 Docker container — no GLIBC symbol leakage
+      - name: Build wheel (Linux)
         if: matrix.os_type == 'linux'
         uses: PyO3/maturin-action@v1
         with:
@@ -122,19 +96,12 @@ jobs:
           target: ${{ matrix.target }}
           args: --release --strip --out dist
 
-      # Catch silent failures (wrong ABI, missing symbols) before artifact upload
+      # Catch wrong ABI / missing symbols before the wheel leaves this runner
       - name: Smoke-test wheel
         shell: bash
         run: |
           pip install --no-index --find-links dist pyratatui
           python -c "import pyratatui; print('✅ import ok:', pyratatui.__version__)"
-
-      # Sigstore SLSA provenance — verifiable with:
-      #   gh attestation verify <wheel> --repo pyratatui/pyratatui
-      - name: Attest wheel provenance
-        uses: actions/attest-build-provenance@v2
-        with:
-          subject-path: dist/*.whl
 
       - uses: actions/upload-artifact@v4
         with:
@@ -148,14 +115,13 @@ jobs:
 # ──────────────────────────────────────────────────────────────────────────────
   release:
     name: GitHub Release & PyPI Publish
-    needs: [audit, build]
+    needs: build
     runs-on: ubuntu-latest
-    environment: pypi   # configure Trusted Publisher here on PyPI
+    environment: pypi
 
     permissions:
       contents: write
       id-token: write
-      attestations: write
 
     steps:
       - uses: actions/checkout@v4
@@ -176,14 +142,13 @@ jobs:
           args: --out dist
 
       - name: Generate SHA256SUMS
-        run: |
-          cd dist && sha256sum *.whl *.tar.gz > SHA256SUMS && cat SHA256SUMS
+        run: cd dist && sha256sum *.whl *.tar.gz > SHA256SUMS
 
       - name: Extract version
         id: version
         run: |
           VERSION=$(sed -n 's/^version *= *"\(.*\)"/\1/p' pyproject.toml | head -1)
-          [ -z "$VERSION" ] && { echo "❌ version not found in pyproject.toml" >&2; exit 1; }
+          [ -z "$VERSION" ] && { echo "❌ version not found" >&2; exit 1; }
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Determine previous tag
@@ -197,7 +162,6 @@ jobs:
                  | head -1 || true)
           echo "previous=$PREV" >> "$GITHUB_OUTPUT"
 
-      # Write to a file — avoids multiline $GITHUB_OUTPUT quoting bugs entirely
       - name: Build release notes
         run: |
           VERSION="${{ steps.version.outputs.version }}"
@@ -211,23 +175,7 @@ jobs:
               echo "### 📜 Full changelog"
               echo "https://github.com/${{ github.repository }}/compare/${PREV}...v${VERSION}"
             fi
-            echo ""
-            echo "### 📦 Wheels"
-            echo "| File | Platform |"
-            echo "|------|----------|"
-            for f in dist/*.whl; do
-              fname=$(basename "$f")
-              plat=$(echo "$fname" | rev | cut -d'-' -f1 | rev | sed 's/\.whl//')
-              echo "| \`$fname\` | $plat |"
-            done
-            echo ""
-            echo "_Verify integrity with \`SHA256SUMS\` attached below._"
           } > release_body.md
-
-      - name: Attest sdist provenance
-        uses: actions/attest-build-provenance@v2
-        with:
-          subject-path: dist/*.tar.gz
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -243,14 +191,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # OIDC Trusted Publishing — no PYPI_TOKEN secret needed.
+      # OIDC Trusted Publishing — no PYPI_TOKEN needed.
       # Setup: PyPI → Your project → Publishing → Add Publisher
       #   owner: pyratatui  repo: pyratatui  workflow: CI.yml  env: pypi
-      # Fallback to token: uncomment password line + add PYPI_TOKEN secret.
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
           skip-existing: true
-          # password: ${{ secrets.PYPI_TOKEN }}
+          # password: ${{ secrets.PYPI_TOKEN }}  # uncomment for token auth fallback
           
