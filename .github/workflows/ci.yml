@@ -30,10 +30,15 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Build wheels
+      - name: Install build dependencies
+        shell: bash
         run: |
           python -m pip install --upgrade pip setuptools wheel maturin==1.7.2
-          if [ "${{ runner.os }}" = "Linux" ]; then
+
+      - name: Build wheels
+        shell: bash
+        run: |
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
             maturin build --release --strip --out dist --manylinux 2014
           else
             maturin build --release --strip --out dist
@@ -76,12 +81,13 @@ jobs:
         with:
           pattern: wheels-*
           path: dist
-          merge-multiple: false  # Keep OS artifacts separate
+          merge-multiple: false
 
       - name: Generate checksums
         run: |
+          mkdir -p dist/checksums
           for f in dist/*/*.whl; do
-            sha256sum "$f" >> dist/SHA256SUMS
+            sha256sum "$f" >> dist/checksums/SHA256SUMS
           done
 
       - name: Build changelog body
@@ -103,7 +109,7 @@ jobs:
           body: ${{ steps.body.outputs.body }}
           files: |
             dist/**/*.whl
-            dist/SHA256SUMS
+            dist/checksums/SHA256SUMS
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -121,14 +127,17 @@ jobs:
         with:
           pattern: wheels-*
           path: dist
-          merge-multiple: false  # Keep separate
+          merge-multiple: false
 
       - name: Publish to PyPI via maturin
         run: |
           python -m pip install --upgrade pip maturin
           for osdir in dist/*; do
-            maturin publish --release --compatibility manylinux2014 --manifest-path "$osdir/pyproject.toml"
+            if [ -f "$osdir/pyproject.toml" ]; then
+              maturin publish --release --compatibility manylinux2014 --manifest-path "$osdir/pyproject.toml"
+            fi
           done
+        shell: bash
         env:
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
           
