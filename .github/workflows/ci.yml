@@ -26,12 +26,10 @@ jobs:
             runner: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             os_type: linux
-
           - name: macOS arm64
             runner: macos-latest
             target: aarch64-apple-darwin
             os_type: macos
-
           - name: Windows x86_64
             runner: windows-latest
             target: x86_64-pc-windows-msvc
@@ -108,12 +106,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Merge all OS wheels into dist/
       - uses: actions/download-artifact@v4
         with:
           pattern: wheels-*
           merge-multiple: true
           path: dist/
 
+      # Build source distribution
       - name: Build sdist
         uses: PyO3/maturin-action@v1
         with:
@@ -121,8 +121,18 @@ jobs:
           command: sdist
           args: --out dist
 
+      # Generate SHA256SUMS for verification only
       - name: Generate SHA256SUMS
         run: cd dist && sha256sum *.whl *.tar.gz > SHA256SUMS
+
+      # Verify SHA256SUMS (optional CI check)
+      - name: Verify SHA256SUMS
+        run: |
+          cd dist
+          while read SUM FILE; do
+            echo "Verifying $FILE"
+            echo "$SUM  $FILE" | sha256sum -c --status || { echo "SHA256 mismatch for $FILE"; exit 1; }
+          done < SHA256SUMS
 
       - name: Extract version
         id: version
@@ -157,6 +167,7 @@ jobs:
             fi
           } > release_body.md
 
+      # Upload wheels, sdist, and SHA256SUMS to GitHub release
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -171,6 +182,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Publish only valid Python packages to PyPI
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
