@@ -44,19 +44,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Rust stable
-        run: rustup toolchain install stable --profile minimal
-
-      # Setup sccache on all platforms
-      - name: Set up sccache
-        run: |
-          if [[ "${{ matrix.os_type }}" == "linux" ]]; then
-            sudo apt-get update && sudo apt-get install -y sccache
-          fi
-        shell: bash
-
-      - name: Enable sccache
-        run: echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
-        shell: bash
+        run: rustup toolchain install stable --profile minimal --target ${{ matrix.target }}
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -66,7 +54,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
-          cache: ${{ matrix.os_type != 'linux' && 'pip' || '' }}
 
       - name: Build wheel (Linux)
         if: matrix.os_type == 'linux'
@@ -86,10 +73,6 @@ jobs:
           command: build
           target: ${{ matrix.target }}
           args: --release --strip --out dist
-
-      - name: Show sccache stats
-        run: sccache --show-stats
-        shell: bash
 
       - uses: actions/upload-artifact@v4
         with:
@@ -113,14 +96,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Merge all OS wheels
       - uses: actions/download-artifact@v4
         with:
           pattern: wheels-*
           merge-multiple: true
           path: dist/
 
-      # Build sdist
       - name: Build sdist
         uses: PyO3/maturin-action@v1
         with:
@@ -128,11 +109,9 @@ jobs:
           command: sdist
           args: --out dist
 
-      # Generate SHA256SUMS
       - name: Generate SHA256SUMS
         run: cd dist && sha256sum *.whl *.tar.gz > SHA256SUMS
 
-      # Verify SHA256SUMS
       - name: Verify SHA256SUMS
         run: |
           cd dist
@@ -174,7 +153,6 @@ jobs:
             fi
           } > release_body.md
 
-      # Create GitHub release (wheels + sdist + SHA256SUMS)
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -189,7 +167,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Publish only valid Python packages to PyPI
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
