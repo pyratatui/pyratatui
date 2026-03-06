@@ -9,10 +9,14 @@ mod buffer;
 mod effects;
 mod errors;
 mod layout;
+mod popups;
 mod prompts;
+mod qrcode;
+mod scrollview;
 mod style;
 mod terminal;
 mod text;
+mod textarea;
 mod widgets;
 
 /// The pyratatui extension module.
@@ -34,10 +38,14 @@ fn _pyratatui(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     terminal::register_terminal(py, m)?;
     effects::register_effects(py, m)?;
     prompts::register_prompts(py, m)?;
+    popups::register_popups(py, m)?;
+    textarea::register_textarea(py, m)?;
+    scrollview::register_scrollview(py, m)?;
+    qrcode::register_qrcode(py, m)?;
 
     // Top-level convenience re-exports.
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
-    m.add("__ratatui_version__", "0.29")?;
+    m.add("__ratatui_version__", "0.30")?;
 
     Ok(())
 }

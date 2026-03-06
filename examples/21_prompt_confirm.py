@@ -1,5 +1,5 @@
 """
-examples/prompt_confirm.py — Yes/No confirmation prompt demo.
+examples/21_prompt_confirm.py — Yes/No confirmation prompt demo.
 
 Demonstrates a confirm-style interaction built on top of TextState and
 TextPrompt:
@@ -17,13 +17,9 @@ from pyratatui import (
     Constraint,
     Direction,
     Layout,
-    Line,
     Paragraph,
-    PromptStatus,
-    Span,
     Style,
     Terminal,
-    Text,
     TextPrompt,
     TextState,
 )
@@ -142,10 +138,7 @@ with Terminal() as term:
                 state.handle_key(ev)
 
     # ── Capture the result ─────────────────────────────────────────────────
-    if state.is_complete():
-        answer = state.value().lower() == "y"
-    else:
-        answer = None  # Esc / Ctrl+C
+    answer = state.value().lower() == "y" if state.is_complete() else None
 
     term.show_cursor()
 

@@ -1,5 +1,5 @@
 """
-examples/prompt_text.py — Interactive text prompt demo.
+examples/23_prompt_text.py — Interactive text prompt demo.
 
 Demonstrates the stateful TextPrompt / TextState API:
   - TextState holds the mutable input value, cursor and status
@@ -20,13 +20,9 @@ from pyratatui import (
     Constraint,
     Direction,
     Layout,
-    Line,
     Paragraph,
-    PromptStatus,
-    Span,
     Style,
     Terminal,
-    Text,
     TextPrompt,
     TextState,
 )

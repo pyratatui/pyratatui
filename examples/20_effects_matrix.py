@@ -1,5 +1,5 @@
 """
-examples/effects_matrix.py — TachyonFX sweep-in / sweep-out matrix-style demo.
+examples/20_effects_matrix.py — TachyonFX sweep-in / sweep-out matrix-style demo.
 
 Demonstrates:
   - Effect.sweep_in()  — a sweeping reveal from one direction
@@ -100,7 +100,7 @@ with Terminal() as term:
         _label = dir_label
         _run = run_count
 
-        def ui(frame, _mgr=mgr, _ms=_ms, _lbl=_label, _r=_run):
+        def ui(frame, _mgr=mgr, _ms=_ms, _lbl=_label, _r=_run, _di=dir_index):
             area = frame.area
 
             rows = (
@@ -112,8 +112,8 @@ with Terminal() as term:
 
             dir_items: list[Line] = []
             for i, (name, _) in enumerate(DIRECTIONS):
-                marker = "▶ " if i == dir_index else "  "
-                color = Color.yellow() if i == dir_index else Color.white()
+                marker = "▶ " if i == _di else "  "
+                color = Color.yellow() if i == _di else Color.white()
                 dir_items.append(Line([Span(marker + name, Style().fg(color))]))
 
             content_lines = [

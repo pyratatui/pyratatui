@@ -70,7 +70,7 @@ use std::io;
 /// if state.status == PromptStatus.Complete:
 ///     use_value(state.value())
 /// ```
-#[pyclass(module = "pyratatui", eq, eq_int)]
+#[pyclass(module = "pyratatui", eq, eq_int, from_py_object)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum PromptStatus {
     /// Input is still in progress.
@@ -99,7 +99,7 @@ impl PromptStatus {
 /// ```python
 /// prompt = TextPrompt("Token: ", TextRenderStyle.Password)
 /// ```
-#[pyclass(module = "pyratatui", eq, eq_int)]
+#[pyclass(module = "pyratatui", eq, eq_int, from_py_object)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum TextRenderStyle {
     /// Display characters exactly as typed (default).
@@ -455,7 +455,7 @@ fn build_paragraph(label: &str, display: &str, state: &TextState) -> RParagraph<
 /// def ui(frame):
 ///     frame.render_text_prompt(TextPrompt("Name: "), frame.area, state)
 /// ```
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct TextPrompt {
     pub(crate) label: String,
@@ -520,7 +520,7 @@ impl TextPrompt {
 /// def ui(frame):
 ///     frame.render_password_prompt(PasswordPrompt("Password: "), frame.area, state)
 /// ```
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct PasswordPrompt {
     pub(crate) label: String,
@@ -611,7 +611,7 @@ fn run_blocking(label: &str, style: TextRenderStyle) -> PyResult<Option<String>>
                         .split(area);
                     let block = Block::default()
                         .borders(Borders::ALL)
-                        .title(format!(" {} ", owned_label));
+                        .title_top(format!(" {} ", owned_label));
                     let inner = block.inner(rows[1]);
                     frame.render_widget(block, rows[1]);
                     prompt.render_raw(frame, inner, &state);

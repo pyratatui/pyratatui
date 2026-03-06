@@ -7,7 +7,7 @@ use ratatui::widgets::{
 };
 
 /// Orientation of a scrollbar.
-#[pyclass(module = "pyratatui", eq, eq_int)]
+#[pyclass(module = "pyratatui", eq, eq_int, from_py_object)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum ScrollbarOrientation {
     VerticalRight,
@@ -28,7 +28,7 @@ impl ScrollbarOrientation {
 }
 
 /// Mutable scroll position state.
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct ScrollbarState {
     pub(crate) inner: RScrollbarState,
@@ -84,7 +84,7 @@ impl ScrollbarState {
 }
 
 /// A scroll indicator widget.
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Scrollbar {
     orientation: ScrollbarOrientation,

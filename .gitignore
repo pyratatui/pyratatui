@@ -48,3 +48,14 @@ dist/
 
 # Rustfmt backup files
 *.rs.bk
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.pyc
+
+# Archives
+*.zip

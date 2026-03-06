@@ -8,8 +8,8 @@ python -m pip install --upgrade ruff black isort
 # Optional: setup isort config
 # echo -e "[tool.isort]\nprofile = \"black\"" > pyproject.toml
 
-echo "Running Ruff format..."
-ruff format . --exit-zero
+echo "Running Ruff (auto-fix unused imports)..."
+ruff check . --fix
 
 echo "Running isort..."
 python -m isort .

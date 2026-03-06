@@ -14,6 +14,7 @@ Demonstrates: All major pyratatui features in a single production-quality app.
 """
 
 import asyncio
+import contextlib
 import math
 import random
 import time
@@ -29,13 +30,9 @@ from pyratatui import (
     Color,
     Constraint,
     Direction,
-    Effect,
-    EffectManager,
     Gauge,
-    Interpolation,
     Layout,
     Line,
-    LineGauge,
     List,
     ListItem,
     ListState,
@@ -191,15 +188,15 @@ def render_overview(frame, area):
                         [
                             Span("Uptime:   ", Style().bold()),
                             Span(
-                                f"{time.time()-app['started']:.0f}s",
+                                f"{time.time() - app['started']:.0f}s",
                                 Style().fg(Color.green()),
                             ),
                         ]
                     ),
                     Line([]),
                     *[
-                        Line([Span(l, Style().fg(Color.gray()))])
-                        for l in app["log"][-4:]
+                        Line([Span(ln, Style().fg(Color.gray()))])
+                        for ln in app["log"][-4:]
                     ],
                 ]
             )
@@ -218,7 +215,7 @@ def render_services(frame, area):
 
     items = [
         ListItem(
-            f"{'● ' if s['status']=='Running' else '● '}{s['name']:14s}  {s['cpu']:3d}%",
+            f"{'● ' if s['status'] == 'Running' else '● '}{s['name']:14s}  {s['cpu']:3d}%",
             Style().fg(status_color(s["status"])),
         )
         for s in app["services"]
@@ -251,7 +248,9 @@ def render_services(frame, area):
         for s in app["services"]
     ]
     frame.render_stateful_table(
-        Table(rows, [Constraint.fill(1)] * 5, header=hdr)
+        Table(rows)
+        .column_widths([Constraint.fill(1)] * 5)
+        .header(hdr)
         .block(
             Block().bordered().title("Process Table").border_type(BorderType.Rounded)
         )
@@ -327,10 +326,8 @@ async def main():
         term.show_cursor()
 
     metrics_task.cancel()
-    try:
+    with contextlib.suppress(asyncio.CancelledError):
         await metrics_task
-    except asyncio.CancelledError:
-        pass
 
 
 asyncio.run(main())

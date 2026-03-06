@@ -8,7 +8,7 @@ use ratatui::text::{Line as RLine, Span as RSpan, Text as RText};
 
 // ─── Span ────────────────────────────────────────────────────────────────────
 
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Span {
     pub(crate) content: String,
@@ -58,7 +58,7 @@ impl Span {
 
 // ─── Line ────────────────────────────────────────────────────────────────────
 
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Line {
     pub(crate) spans: Vec<Span>,
@@ -145,7 +145,7 @@ impl Line {
 
 // ─── Text ────────────────────────────────────────────────────────────────────
 
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Text {
     pub(crate) lines: Vec<Line>,

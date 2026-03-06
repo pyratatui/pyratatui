@@ -4,11 +4,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ScriptDir  = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectDir = Split-Path -Parent $ScriptDir
 Set-Location $ProjectDir
 
-Write-Host "🐀 pyratatui build script (Windows)" -ForegroundColor Cyan
+Write-Host "[pyratatui] build script (Windows)" -ForegroundColor Cyan
 Write-Host "   OS:   Windows"
 Write-Host "   Arch: $env:PROCESSOR_ARCHITECTURE"
 
@@ -22,22 +22,22 @@ if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
-Write-Host "✅  $(maturin --version)"
-Write-Host "✅  $(cargo --version)"
+Write-Host "[OK] $(maturin --version)"
+Write-Host "[OK] $(cargo --version)"
 
 switch ($Mode) {
     "--dev" {
-        Write-Host "`n🔧 Development mode..."
+        Write-Host "`n[DEV] Development mode (editable install)..."
         maturin develop --release
-        Write-Host "✅  Installed (editable)."
+        Write-Host "[OK] Installed (editable)."
     }
     "--sdist" {
-        Write-Host "`n📦 Building sdist..."
+        Write-Host "`n[SDIST] Building source distribution..."
         maturin sdist --out dist\
-        Write-Host "✅  sdist created."
+        Write-Host "[OK] sdist created in dist\"
     }
     default {
-        Write-Host "`n📦 Building release wheel..."
+        Write-Host "`n[BUILD] Building release wheel..."
         maturin build --release --strip --out dist\
 
         $wheel = Get-ChildItem dist\*.whl |
@@ -45,13 +45,13 @@ switch ($Mode) {
                  Select-Object -First 1
 
         if (-not $wheel) {
-            Write-Error "No wheel produced."
+            Write-Error "No wheel produced in dist\"
             exit 1
         }
 
-        Write-Host "🚀 Installing $($wheel.Name)..."
+        Write-Host "[INSTALL] Installing $($wheel.Name)..."
         pip install --upgrade $wheel.FullName --force-reinstall
 
-        Write-Host "✅  Installed successfully."
+        Write-Host "[OK] Installed successfully."
     }
 }

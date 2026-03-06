@@ -26,11 +26,9 @@ from pyratatui import (
     Gauge,
     Layout,
     Line,
-    LineGauge,
     List,
     ListItem,
     ListState,
-    Modifier,
     Paragraph,
     Row,
     Span,
@@ -82,13 +80,18 @@ def main() -> None:
         while True:
             t = tick
             ti = tab_index
-            selected_server = list_state.selected or 0
+
+            # ── Safe selection of server ──────────────────────────────
+            selected_server = list_state.selected
+            if selected_server is None or selected_server >= len(SERVERS):
+                selected_server = 0
+                list_state.select(selected_server)
             srv = SERVERS[selected_server]
 
             def ui(frame, _tick=t, _ti=ti, _srv=srv):  # noqa: ANN001
                 area = frame.area
 
-                # ── Top-level vertical split ─────────────────────────────────
+                # ── Top-level vertical split ─────────────────────────────
                 outer = (
                     Layout()
                     .direction(Direction.Vertical)
@@ -103,7 +106,7 @@ def main() -> None:
                     .split(area)
                 )
 
-                # ── Tabs ─────────────────────────────────────────────────────
+                # ── Tabs ────────────────────────────────────────────────
                 frame.render_widget(
                     Tabs(["Overview", "Processes", "Logs"])
                     .select(_ti)
@@ -117,7 +120,7 @@ def main() -> None:
                     outer[0],
                 )
 
-                # ── Main body horizontal split ───────────────────────────────
+                # ── Main body horizontal split ───────────────────────────
                 body = (
                     Layout()
                     .direction(Direction.Horizontal)
@@ -137,10 +140,10 @@ def main() -> None:
                     .split(body[0])
                 )
 
-                # ── Server list ──────────────────────────────────────────────
+                # ── Server list ──────────────────────────────────────────
                 items = [
                     ListItem(
-                        f"{'● ' if s['status']=='Running' else '○ '}{s['name']:10s}"
+                        f"{'● ' if s['status'] == 'Running' else '○ '}{s['name']:10s}"
                         f"  CPU:{s['cpu']:3d}%",
                         Style().fg(status_color(s["status"])),
                     )
@@ -160,7 +163,7 @@ def main() -> None:
                     list_state,
                 )
 
-                # ── Sparkline (CPU history) ──────────────────────────────────
+                # ── Sparkline (CPU history) ──────────────────────────────
                 history = CPU_HISTORY[-left_panels[1].width :]
                 frame.render_widget(
                     Sparkline()
@@ -171,7 +174,7 @@ def main() -> None:
                     left_panels[1],
                 )
 
-                # ── Right side panels ────────────────────────────────────────
+                # ── Right side panels ────────────────────────────────────
                 right_panels = (
                     Layout()
                     .direction(Direction.Vertical)
@@ -179,7 +182,7 @@ def main() -> None:
                     .split(body[1])
                 )
 
-                # ── Process table ────────────────────────────────────────────
+                # ── Process table ───────────────────────────────────────
                 hdr = Row([Cell("Server"), Cell("CPU"), Cell("Memory"), Cell("Status")])
                 rows = [
                     Row(
@@ -216,7 +219,7 @@ def main() -> None:
                     table_state,
                 )
 
-                # ── Bar chart ────────────────────────────────────────────────
+                # ── Bar chart ───────────────────────────────────────────
                 bars = [
                     Bar(s["cpu"], s["name"][:6]).style(Style().fg(cpu_color(s["cpu"])))
                     for s in SERVERS
@@ -233,7 +236,7 @@ def main() -> None:
                     right_panels[1],
                 )
 
-                # ── Bottom gauge ─────────────────────────────────────────────
+                # ── Bottom gauge ────────────────────────────────────────
                 frame.render_widget(
                     Gauge()
                     .percent(_srv["cpu"])
@@ -244,7 +247,7 @@ def main() -> None:
                     outer[2],
                 )
 
-                # ── Status bar ───────────────────────────────────────────────
+                # ── Status bar ─────────────────────────────────────────
                 frame.render_widget(
                     Paragraph(
                         Text(
@@ -274,13 +277,14 @@ def main() -> None:
             term.draw(ui)
             tick += 1
 
-            # ── Update simulated data ────────────────────────────────────────
+            # ── Update simulated data ─────────────────────────────────
             for srv in SERVERS:
                 srv["cpu"] = max(0, min(100, srv["cpu"] + (tick % 3 - 1) * 2))
             CPU_HISTORY.append(SERVERS[0]["cpu"])
             if len(CPU_HISTORY) > 100:
                 CPU_HISTORY.pop(0)
 
+            # ── Poll keyboard events ─────────────────────────────────
             ev = term.poll_event(timeout_ms=80)
             if ev:
                 if ev.code == "q" or (ev.code == "c" and ev.ctrl):

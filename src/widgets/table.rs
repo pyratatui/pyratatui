@@ -1,17 +1,27 @@
 // src/widgets/table.rs
 //! Python bindings for `Table`, `Row`, `Cell`, and `TableState`.
+//!
+//! ratatui 0.30 breaking changes:
+//! - `Row::height()` is now `Row::height_with_margin()` for rows taller than 1.
+//!   The plain `Row::new(cells)` / `.height(n)` builder still exists; no change needed.
+//! - `Table::column_spacing()` renamed to `Table::column_spacing()` (unchanged).
+//! - All types remain in `ratatui::widgets`.
 
 use pyo3::prelude::*;
 use ratatui::layout::Constraint as RConstraint;
-use ratatui::widgets::{Cell as RCell, Row as RRow, Table as RTable, TableState as RTableState};
+use ratatui::widgets::{
+    Cell as RCell, HighlightSpacing, Row as RRow, Table as RTable, TableState as RTableState,
+};
 
 use crate::layout::Constraint;
 use crate::style::Style;
 use crate::text::Text;
 use crate::widgets::block::Block;
 
+// ─── Cell ─────────────────────────────────────────────────────────────────────
+
 /// A single styled cell in a table row.
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Cell {
     text: Text,
@@ -38,20 +48,20 @@ impl Cell {
             style: style.cloned(),
         }
     }
-
     pub fn style(&self, style: &Style) -> Cell {
         let mut c = self.clone();
         c.style = Some(style.clone());
         c
     }
-
     fn __repr__(&self) -> String {
         format!("Cell(width={})", self.text.width())
     }
 }
 
+// ─── Row ──────────────────────────────────────────────────────────────────────
+
 /// A row of cells in a table.
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Row {
     cells: Vec<Cell>,
@@ -80,8 +90,6 @@ impl Row {
             height: 1,
         }
     }
-
-    /// Convenience: create a row from plain strings.
     #[staticmethod]
     pub fn from_strings(texts: Vec<String>) -> Row {
         Row {
@@ -90,7 +98,6 @@ impl Row {
             height: 1,
         }
     }
-
     pub fn style(&self, style: &Style) -> Row {
         let mut r = self.clone();
         r.style = Some(style.clone());
@@ -101,14 +108,15 @@ impl Row {
         r.height = height;
         r
     }
-
     fn __repr__(&self) -> String {
         format!("Row(cells={})", self.cells.len())
     }
 }
 
+// ─── TableState ───────────────────────────────────────────────────────────────
+
 /// Mutable selection state for a `Table`.
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct TableState {
     pub(crate) inner: RTableState,
@@ -145,98 +153,119 @@ impl TableState {
     pub fn selected(&self) -> Option<usize> {
         self.inner.selected()
     }
-
     #[getter]
     pub fn offset(&self) -> usize {
         self.inner.offset()
     }
+
+    fn __repr__(&self) -> String {
+        format!("TableState(selected={:?})", self.inner.selected())
+    }
 }
 
-/// A data grid widget with headers and selectable rows.
+// ─── Table ────────────────────────────────────────────────────────────────────
+
+/// A scrollable table widget with row and column selection.
 ///
 /// ```python
-/// from pyratatui import Table, Row, Cell, TableState, Constraint, Style, Color
+/// from pyratatui import Table, Row, Cell, Constraint, TableState, Block
 ///
-/// table = (Table(
-///     rows=[Row.from_strings(["Alice", "Engineer", "Berlin"])],
-///     header=Row.from_strings(["Name", "Role", "City"]).style(Style().bold()),
-///     widths=[Constraint.percentage(30), Constraint.fill(1), Constraint.percentage(30)],
-/// )
-/// .block(Block().bordered().title("Staff"))
-/// .highlight_style(Style().fg(Color.cyan())))
+/// rows = [
+///     Row([Cell("Name"), Cell("Value")]),
+///     Row([Cell("Alice"), Cell("42")]),
+/// ]
+/// table = (Table(rows)
+///     .column_widths([Constraint.length(20), Constraint.fill(1)])
+///     .block(Block().bordered().title("Data"))
+///     .highlight_symbol("▶ "))
 ///
 /// state = TableState()
 /// state.select(0)
+/// # render with frame.render_stateful_table(table, area, state)
 /// ```
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Table {
     rows: Vec<Row>,
     header: Option<Row>,
     footer: Option<Row>,
-    widths: Vec<Constraint>,
     block: Option<Block>,
+    column_widths: Vec<Constraint>,
     style: Option<Style>,
     highlight_style: Option<Style>,
     highlight_symbol: Option<String>,
     column_spacing: u16,
+    #[allow(dead_code)]
+    flex_widths: bool,
 }
 
 impl Table {
-    pub(crate) fn to_ratatui(&self) -> RTable<'static> {
+    pub(crate) fn to_ratatui(&self) -> RTable<'_> {
         let rows: Vec<RRow<'static>> = self.rows.iter().map(|r| r.to_ratatui()).collect();
-        let widths: Vec<RConstraint> = self.widths.iter().map(|c| c.inner).collect();
-
-        let mut tbl = RTable::new(rows, widths);
+        let widths: Vec<RConstraint> = self.column_widths.iter().map(|c| c.inner).collect();
+        let mut table = RTable::new(rows, widths).column_spacing(self.column_spacing);
 
         if let Some(ref h) = self.header {
-            tbl = tbl.header(h.to_ratatui());
+            table = table.header(h.to_ratatui());
         }
         if let Some(ref f) = self.footer {
-            tbl = tbl.footer(f.to_ratatui());
+            table = table.footer(f.to_ratatui());
         }
         if let Some(ref b) = self.block {
-            tbl = tbl.block(b.to_ratatui());
+            table = table.block(b.to_ratatui());
         }
         if let Some(ref s) = self.style {
-            tbl = tbl.style(s.inner);
+            table = table.style(s.inner);
         }
         if let Some(ref s) = self.highlight_style {
-            tbl = tbl.row_highlight_style(s.inner);
+            table = table.row_highlight_style(s.inner);
         }
         if let Some(ref sym) = self.highlight_symbol {
-            tbl = tbl.highlight_symbol(sym.clone());
+            table = table
+                .highlight_symbol(sym.as_str())
+                .highlight_spacing(HighlightSpacing::Always);
         }
-        tbl = tbl.column_spacing(self.column_spacing);
-        tbl
+        table
     }
 }
 
 #[pymethods]
 impl Table {
     #[new]
-    #[pyo3(signature = (rows, widths, header=None))]
-    pub fn new(
-        rows: Vec<PyRef<Row>>,
-        widths: Vec<PyRef<Constraint>>,
-        header: Option<&Row>,
-    ) -> Self {
+    pub fn new(rows: Vec<PyRef<Row>>) -> Self {
         Self {
             rows: rows.iter().map(|r| (**r).clone()).collect(),
-            header: header.cloned(),
+            header: None,
             footer: None,
-            widths: widths.iter().map(|c| (**c).clone()).collect(),
             block: None,
+            column_widths: vec![],
             style: None,
             highlight_style: None,
             highlight_symbol: None,
             column_spacing: 1,
+            #[allow(dead_code)]
+            flex_widths: false,
         }
     }
 
+    pub fn header(&self, row: &Row) -> Table {
+        let mut t = self.clone();
+        t.header = Some(row.clone());
+        t
+    }
+    pub fn footer(&self, row: &Row) -> Table {
+        let mut t = self.clone();
+        t.footer = Some(row.clone());
+        t
+    }
     pub fn block(&self, block: &Block) -> Table {
         let mut t = self.clone();
         t.block = Some(block.clone());
+        t
+    }
+    pub fn column_widths(&self, widths: Vec<PyRef<Constraint>>) -> Table {
+        let mut t = self.clone();
+        t.column_widths = widths.iter().map(|c| (**c).clone()).collect();
         t
     }
     pub fn style(&self, style: &Style) -> Table {
@@ -259,18 +288,8 @@ impl Table {
         t.column_spacing = n;
         t
     }
-    pub fn footer(&self, row: &Row) -> Table {
-        let mut t = self.clone();
-        t.footer = Some(row.clone());
-        t
-    }
-
     fn __repr__(&self) -> String {
-        format!(
-            "Table(rows={}, cols={})",
-            self.rows.len(),
-            self.widths.len()
-        )
+        format!("Table(rows={})", self.rows.len())
     }
 }
 

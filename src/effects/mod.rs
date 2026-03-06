@@ -8,7 +8,6 @@ use ratatui::layout::Margin as RMargin;
 use ratatui::style::Color as RColor;
 use std::collections::HashMap;
 use tachyonfx::fx::RepeatMode;
-use tachyonfx::Shader; // process / done / reset trait methods
 use tachyonfx::{
     fx, CellFilter as TCellFilter, Effect as TEffect, EffectTimer as TEffectTimer,
     Interpolation as TInterpolation, Motion as TMotion,
@@ -23,7 +22,7 @@ fn make_timer(ms: u64, interp: Option<Interpolation>) -> TEffectTimer {
 
 // ─── Interpolation ───────────────────────────────────────────────────────────
 
-#[pyclass(module = "pyratatui", eq, eq_int)]
+#[pyclass(module = "pyratatui", eq, eq_int, from_py_object)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum Interpolation {
     Linear,
@@ -97,7 +96,7 @@ impl Interpolation {
 
 // ─── Motion ──────────────────────────────────────────────────────────────────
 
-#[pyclass(module = "pyratatui", eq, eq_int)]
+#[pyclass(module = "pyratatui", eq, eq_int, from_py_object)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum Motion {
     LeftToRight,
@@ -119,7 +118,7 @@ impl Motion {
 
 // ─── EffectTimer ─────────────────────────────────────────────────────────────
 
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct EffectTimer {
     pub(crate) duration_ms: u64,
@@ -161,7 +160,7 @@ impl EffectTimer {
 
 // ─── CellFilter ──────────────────────────────────────────────────────────────
 
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct CellFilter {
     pub(crate) inner: CellFilterKind,

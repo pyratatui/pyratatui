@@ -1,16 +1,30 @@
 // src/widgets/block.rs
 //! Python binding for the `Block` widget.
+//!
+//! ratatui 0.30 breaking changes handled here:
+//! - `block::Title` struct has been **removed**. Use `Line` + `title_top()` / `title_bottom()`.
+//! - `Block::title_alignment()` is still available but now accepts `HorizontalAlignment`.
+//!   A type-alias `Alignment = HorizontalAlignment` is provided for backwards compatibility.
+//! - New `BorderType` variants: `LightDoubleDashed`, `HeavyDoubleDashed`, etc. Added below.
 
 use pyo3::prelude::*;
-use ratatui::layout::Alignment;
+use ratatui::layout::HorizontalAlignment;
+use ratatui::text::{Line as RLine, Span as RSpan};
 use ratatui::widgets::{Block as RBlock, BorderType as RBorderType, Borders, Padding as RPadding};
 
+use crate::layout::Rect;
 use crate::style::Style;
 
 // ─── BorderType ───────────────────────────────────────────────────────────────
 
 /// The visual style of a block border.
-#[pyclass(module = "pyratatui", eq, eq_int)]
+///
+/// ```python
+/// from pyratatui import Block, BorderType
+///
+/// block = Block().bordered().border_type(BorderType.Rounded)
+/// ```
+#[pyclass(module = "pyratatui", eq, eq_int, from_py_object)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum BorderType {
     Plain,
@@ -19,6 +33,13 @@ pub enum BorderType {
     Thick,
     QuadrantInside,
     QuadrantOutside,
+    // New in ratatui 0.30:
+    LightDoubleDashed,
+    HeavyDoubleDashed,
+    LightTripleDashed,
+    HeavyTripleDashed,
+    LightQuadrupleDashed,
+    HeavyQuadrupleDashed,
 }
 
 impl BorderType {
@@ -30,7 +51,20 @@ impl BorderType {
             BorderType::Thick => RBorderType::Thick,
             BorderType::QuadrantInside => RBorderType::QuadrantInside,
             BorderType::QuadrantOutside => RBorderType::QuadrantOutside,
+            BorderType::LightDoubleDashed => RBorderType::LightDoubleDashed,
+            BorderType::HeavyDoubleDashed => RBorderType::HeavyDoubleDashed,
+            BorderType::LightTripleDashed => RBorderType::LightTripleDashed,
+            BorderType::HeavyTripleDashed => RBorderType::HeavyTripleDashed,
+            BorderType::LightQuadrupleDashed => RBorderType::LightQuadrupleDashed,
+            BorderType::HeavyQuadrupleDashed => RBorderType::HeavyQuadrupleDashed,
         }
+    }
+}
+
+#[pymethods]
+impl BorderType {
+    fn __repr__(&self) -> String {
+        format!("BorderType.{:?}", self)
     }
 }
 
@@ -47,7 +81,7 @@ impl BorderType {
 ///     .border_type(BorderType.Rounded)
 ///     .style(Style().fg(Color.cyan())))
 /// ```
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Block {
     title: Option<String>,
@@ -93,23 +127,29 @@ impl Block {
                 bottom: self.padding_bottom,
             });
 
+        // ratatui 0.30: block::Title struct removed.
+        // Use title_top(Line) with alignment set on the Line itself.
         if let Some(ref t) = self.title {
             let align = match self.title_alignment.as_str() {
-                "center" => Alignment::Center,
-                "right" => Alignment::Right,
-                _ => Alignment::Left,
+                "center" => HorizontalAlignment::Center,
+                "right" => HorizontalAlignment::Right,
+                _ => HorizontalAlignment::Left,
             };
-            let line = if let Some(ref ts) = self.title_style {
-                ratatui::text::Line::from(ratatui::text::Span::styled(t.clone(), ts.inner))
+            let line: RLine<'static> = if let Some(ref ts) = self.title_style {
+                RLine::from(RSpan::styled(t.clone(), ts.inner))
             } else {
-                ratatui::text::Line::from(t.clone())
+                RLine::from(t.clone())
             };
-            block = block.title(line).title_alignment(align);
+            // title_top() positions the title on the top border.
+            // title_alignment() still works as a block-level default.
+            block = block.title_top(line).title_alignment(align);
         }
+
         if let Some(ref b) = self.title_bottom {
-            let line = ratatui::text::Line::from(b.clone());
+            let line: RLine<'static> = RLine::from(b.clone());
             block = block.title_bottom(line);
         }
+
         if let Some(ref s) = self.style {
             block = block.style(s.inner);
         }
@@ -141,7 +181,7 @@ impl Block {
         }
     }
 
-    /// Set the top title. Returns `self` for chaining.
+    /// Set the top title.  Returns `self` for chaining.
     pub fn title(&self, title: &str) -> Block {
         let mut b = self.clone();
         b.title = Some(title.to_string());
@@ -163,9 +203,6 @@ impl Block {
     }
 
     /// Enable specific borders.
-    ///
-    /// Args:
-    ///     top, right, bottom, left: booleans
     #[pyo3(signature = (top=true, right=true, bottom=true, left=true))]
     pub fn borders(&self, top: bool, right: bool, bottom: bool, left: bool) -> Block {
         let mut b = self.clone();
@@ -218,6 +255,24 @@ impl Block {
         let mut b = self.clone();
         b.title_alignment = alignment.to_string();
         b
+    }
+
+    /// Return the inner area of the block for a given outer `area`.
+    ///
+    /// This subtracts the borders and padding to give the area available
+    /// for content rendered inside the block.
+    ///
+    /// ```python
+    /// block = Block().bordered().title("Example")
+    /// inner = block.inner(frame.area)
+    /// frame.render_widget(block, frame.area)
+    /// frame.render_widget(content, inner)
+    /// ```
+    pub fn inner(&self, area: &Rect) -> Rect {
+        let rblock = self.to_ratatui();
+        Rect {
+            inner: rblock.inner(area.inner),
+        }
     }
 
     fn __repr__(&self) -> String {

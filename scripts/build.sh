@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+# build.sh — pyratatui build helper
+# Usage:
+#   ./scripts/build.sh           # release wheel + pip install
+#   ./scripts/build.sh --dev     # editable maturin develop
+#   ./scripts/build.sh --sdist   # source distribution only
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -8,43 +13,43 @@ cd "$PROJECT_DIR"
 OS="$(uname -s)"
 ARCH="$(uname -m)"
 
-echo "🐀 pyratatui build script"
+echo "[pyratatui] build script"
 echo "   OS:   $OS"
 echo "   Arch: $ARCH"
 
-command -v maturin >/dev/null || { echo "maturin not found"; exit 1; }
-command -v cargo >/dev/null || { echo "cargo not found"; exit 1; }
+command -v maturin >/dev/null 2>&1 || { echo "[ERROR] maturin not found. Run: pip install maturin"; exit 1; }
+command -v cargo   >/dev/null 2>&1 || { echo "[ERROR] cargo not found. Install Rust: https://rustup.rs"; exit 1; }
 
-echo "✅  $(maturin --version)"
-echo "✅  $(cargo --version)"
+echo "[OK] $(maturin --version)"
+echo "[OK] $(cargo --version)"
 
 MODE="${1:-}"
 
 case "$MODE" in
     --dev)
-        echo "🔧 Development mode..."
+        echo "[DEV] Development mode (editable install)..."
         maturin develop --release
-        echo "✅  Installed (editable)."
+        echo "[OK] Installed (editable)."
         ;;
     --sdist)
-        echo "📦 Building sdist..."
+        echo "[SDIST] Building source distribution..."
         maturin sdist --out dist/
-        echo "✅  sdist created."
+        echo "[OK] sdist created in dist/"
         ;;
     *)
-        echo "📦 Building release wheel..."
+        echo "[BUILD] Building release wheel..."
         maturin build --release --strip --out dist/
 
         WHEEL="$(ls -t dist/*.whl 2>/dev/null | head -n 1 || true)"
 
         if [[ -z "$WHEEL" ]]; then
-            echo "No wheel produced."
+            echo "[ERROR] No wheel produced in dist/"
             exit 1
         fi
 
-        echo "🚀 Installing $(basename "$WHEEL")..."
+        echo "[INSTALL] Installing $(basename "$WHEEL")..."
         pip install --upgrade "$WHEEL" --force-reinstall
 
-        echo "✅  Installed successfully."
+        echo "[OK] Installed successfully."
         ;;
 esac

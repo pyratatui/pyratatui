@@ -1,8 +1,11 @@
 // src/terminal/mod.rs
 //! Python bindings for `Terminal` and `Frame`.
 //!
-//! This is the heart of pyratatui: `Terminal` owns the screen and drives the
-//! render loop; `Frame` is passed into the draw callback each tick.
+//! ratatui 0.30 breaking changes handled here:
+//! - `Frame::size()` → `Frame::area()` (size() deprecated and removed)
+//! - `Terminal::get_frame()` replaced by `Terminal::size()` returning Result<Rect, B::Error>
+//! - Backend now requires an associated `Error` type and `clear_region` method
+//!   (CrosstermBackend satisfies both automatically)
 
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
@@ -19,7 +22,13 @@ use ratatui::{backend::CrosstermBackend, Frame as RFrame, Terminal as RTerminal}
 use crate::effects::{Effect as PyEffect, EffectManager as PyEffectManager};
 use crate::errors::{io_err_to_py, render_err_to_py};
 use crate::layout::Rect;
+use crate::popups::{
+    render_popup_text, render_stateful_popup_text, Popup as PyPopup, PopupState as PyPopupState,
+};
 use crate::prompts::{PasswordPrompt, TextPrompt, TextState};
+use crate::qrcode::QrCodeWidget as PyQrCodeWidget;
+use crate::scrollview::{ScrollView as PyScrollView, ScrollViewState as PyScrollViewState};
+use crate::textarea::TextArea as PyTextArea;
 use crate::widgets::{
     BarChart, Block, Clear, Gauge, LineGauge, List, ListState, Paragraph, Scrollbar,
     ScrollbarState, Sparkline, Table, TableState, Tabs,
@@ -28,7 +37,7 @@ use crate::widgets::{
 // ─── KeyEvent wrapper ─────────────────────────────────────────────────────────
 
 /// A keyboard event returned from `Terminal.poll_event()`.
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct PyKeyEvent {
     /// Key code as a string (e.g. "a", "Enter", "Esc", "Up", "F1").
@@ -94,13 +103,9 @@ impl PyKeyEvent {
 ///     )
 /// ```
 ///
-/// **Note:** `Frame` is only valid inside the `draw` callback. Do not store
-/// references to it.
+/// **Note:** `Frame` is only valid inside the `draw` callback. Do not store it.
 #[pyclass(module = "pyratatui", unsendable)]
 pub struct Frame {
-    // We use a raw pointer here because Frame borrows the terminal which
-    // lives on the Rust side; the pointer is only dereferenced inside the
-    // draw callback and is guaranteed valid.
     ptr: *mut RFrame<'static>,
 }
 
@@ -115,6 +120,8 @@ impl Frame {
 #[pymethods]
 impl Frame {
     /// The full terminal area available for this frame.
+    ///
+    /// ratatui 0.30: `Frame::size()` removed, use `Frame::area()`.
     #[getter]
     pub fn area(&mut self) -> Rect {
         Rect {
@@ -122,16 +129,13 @@ impl Frame {
         }
     }
 
-    /// The full terminal size (alias for `area`).
+    /// Alias for `area` (backwards compatible).
     #[getter]
     pub fn size(&mut self) -> Rect {
         self.area()
     }
 
     /// Render a widget into the given area.
-    ///
-    /// Accepts: `Block`, `Paragraph`, `Gauge`, `LineGauge`, `BarChart`,
-    /// `Sparkline`, `Clear`, `Scrollbar`, `Tabs`.
     pub fn render_widget(&mut self, widget: &Bound<'_, PyAny>, area: &Rect) -> PyResult<()> {
         let frame = self.get();
         let a = area.inner;
@@ -154,12 +158,10 @@ impl Frame {
         try_widget!(Clear, to_ratatui);
         try_widget!(Tabs, to_ratatui);
 
-        // Handle List separately (stateless render)
         if let Ok(w) = widget.extract::<PyRef<List>>() {
             frame.render_widget(w.to_ratatui(), a);
             return Ok(());
         }
-        // Handle Table separately
         if let Ok(w) = widget.extract::<PyRef<Table>>() {
             frame.render_widget(w.to_ratatui(), a);
             return Ok(());
@@ -216,19 +218,13 @@ impl Frame {
     }
 
     /// Apply a TachyonFX `Effect` to this frame's buffer.
-    ///
-    /// Call **after** all `render_widget` calls — effects transform already-rendered cells.
     pub fn apply_effect(&mut self, effect: &mut PyEffect, elapsed_ms: u64, area: &Rect) {
-        use tachyonfx::Shader;
         let dur: tachyonfx::Duration = std::time::Duration::from_millis(elapsed_ms).into();
         let buf = unsafe { &mut *self.buffer_mut_ptr() };
         effect.inner.process(dur, buf, area.inner);
     }
 
     /// Apply an `EffectManager` to this frame's buffer.
-    ///
-    /// Advances all managed effects and removes completed ones.
-    /// Call **after** all `render_widget` calls.
     pub fn apply_effect_manager(
         &mut self,
         manager: &mut PyEffectManager,
@@ -240,23 +236,11 @@ impl Frame {
     }
 
     /// Render a [`TextPrompt`] with the given [`TextState`] into `area`.
-    ///
-    /// Call this **inside** a `term.draw(ui)` callback:
-    ///
-    /// ```python
-    /// def ui(frame):
-    ///     frame.render_text_prompt(TextPrompt("Name: "), frame.area, state)
-    /// ```
     pub fn render_text_prompt(&mut self, prompt: &TextPrompt, area: &Rect, state: &TextState) {
         prompt.render_raw(self.get(), area.inner, state);
     }
 
     /// Render a [`PasswordPrompt`] with the given [`TextState`] into `area`.
-    ///
-    /// ```python
-    /// def ui(frame):
-    ///     frame.render_password_prompt(PasswordPrompt("Password: "), frame.area, state)
-    /// ```
     pub fn render_password_prompt(
         &mut self,
         prompt: &PasswordPrompt,
@@ -265,12 +249,55 @@ impl Frame {
     ) {
         prompt.render_raw(self.get(), area.inner, state);
     }
+
+    /// Render a `Popup` widget (stateless — always centered).
+    pub fn render_popup(&mut self, popup: &PyPopup, area: &Rect) {
+        render_popup_text(self.get(), popup, area.inner);
+    }
+
+    /// Render a `Popup` widget with `PopupState` (draggable / moveable).
+    pub fn render_stateful_popup(
+        &mut self,
+        popup: &PyPopup,
+        area: &Rect,
+        state: &mut PyPopupState,
+    ) {
+        render_stateful_popup_text(self.get(), popup, area.inner, state);
+    }
+
+    /// Render a `TextArea` multi-line text editor widget.
+    ///
+    /// In ratatui 0.30 / tui-textarea 0.7, `&TextArea` implements `Widget`
+    /// so we take an immutable reference.
+    pub fn render_textarea(&mut self, ta: &PyTextArea, area: &Rect) {
+        ta.render_raw(self.get(), area.inner);
+    }
+
+    /// Render a `ScrollView` with its mutable `ScrollViewState`.
+    pub fn render_stateful_scrollview(
+        &mut self,
+        sv: &PyScrollView,
+        area: &Rect,
+        mut state: PyRefMut<'_, PyScrollViewState>,
+    ) {
+        sv.render_into_frame(self.get(), area.inner, &mut state);
+    }
+
+    /// Render a `QrCodeWidget` QR code into the given area.
+    pub fn render_qrcode(&mut self, qr: &PyQrCodeWidget, area: &Rect) -> PyResult<()> {
+        qr.render_raw(self.get(), area.inner)
+    }
 }
 
 impl Frame {
-    // Called from the effect pipeline — safe only inside draw callback.
+    #[allow(dead_code)]
     pub(crate) fn buffer_mut_ptr(&mut self) -> *mut ratatui::buffer::Buffer {
         self.get().buffer_mut() as *mut _
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn buffer_mut(&mut self) -> &mut ratatui::buffer::Buffer {
+        self.get().buffer_mut()
     }
 }
 
@@ -280,10 +307,8 @@ type RatTerminal = RTerminal<CrosstermBackend<Stdout>>;
 
 /// The main terminal driver.
 ///
-/// `Terminal` initialises the crossterm backend, enters alternate screen mode,
-/// enables raw input, and drives the render loop.
-///
-/// **Sync usage:**
+/// Initialises the crossterm backend, enters alternate screen mode, and drives
+/// the render loop.
 ///
 /// ```python
 /// from pyratatui import Terminal, Paragraph, Text
@@ -300,23 +325,6 @@ type RatTerminal = RTerminal<CrosstermBackend<Stdout>>;
 ///         if ev and ev.code == "q":
 ///             break
 /// ```
-///
-/// **Async usage:**
-///
-/// ```python
-/// import asyncio
-/// from pyratatui import Terminal, Paragraph
-///
-/// async def main():
-///     async with Terminal() as term:
-///         for _ in range(50):
-///             def ui(frame):
-///                 frame.render_widget(Paragraph.from_string("Async!"), frame.area)
-///             term.draw(ui)
-///             await asyncio.sleep(0.05)
-///
-/// asyncio.run(main())
-/// ```
 #[pyclass(module = "pyratatui", unsendable)]
 pub struct Terminal {
     inner: Option<RatTerminal>,
@@ -325,9 +333,6 @@ pub struct Terminal {
 
 #[pymethods]
 impl Terminal {
-    /// Create a new `Terminal` instance (does NOT initialise the screen yet).
-    ///
-    /// Call `__enter__` (or use `with Terminal() as t:`) to initialise.
     #[new]
     pub fn new() -> PyResult<Self> {
         Ok(Self {
@@ -338,11 +343,9 @@ impl Terminal {
 
     // ── Context manager ──────────────────────────────────────────────────────
 
-    /// Initialise the terminal: enable raw mode, enter alternate screen.
     pub fn __enter__(mut slf: PyRefMut<'_, Self>) -> PyResult<PyRefMut<'_, Self>> {
         enable_raw_mode().map_err(io_err_to_py)?;
-        let mut stdout = io::stdout();
-        execute!(stdout, EnterAlternateScreen).map_err(io_err_to_py)?;
+        execute!(io::stdout(), EnterAlternateScreen).map_err(io_err_to_py)?;
         let backend = CrosstermBackend::new(io::stdout());
         let terminal = RTerminal::new(backend).map_err(io_err_to_py)?;
         slf.inner = Some(terminal);
@@ -350,7 +353,6 @@ impl Terminal {
         Ok(slf)
     }
 
-    /// Restore the terminal: leave alternate screen, disable raw mode.
     pub fn __exit__(
         &mut self,
         _exc_type: &Bound<'_, PyAny>,
@@ -358,10 +360,9 @@ impl Terminal {
         _exc_tb: &Bound<'_, PyAny>,
     ) -> PyResult<bool> {
         self.restore()?;
-        Ok(false) // do not suppress exceptions
+        Ok(false)
     }
 
-    /// Manually restore the terminal (called automatically by `__exit__`).
     pub fn restore(&mut self) -> PyResult<()> {
         if self.entered {
             disable_raw_mode().map_err(io_err_to_py)?;
@@ -373,18 +374,11 @@ impl Terminal {
 
     // ── Drawing ──────────────────────────────────────────────────────────────
 
-    /// Call `draw_fn(frame)` to render one frame.
-    ///
-    /// `draw_fn` receives a `Frame` object and should call `frame.render_widget(...)`.
     pub fn draw(&mut self, draw_fn: &Bound<'_, PyAny>) -> PyResult<()> {
         let term = self.inner.as_mut().ok_or_else(|| {
             PyRuntimeError::new_err("Terminal not initialised — use `with Terminal() as t:`")
         })?;
 
-        // Safety: the Frame pointer is only dereferenced inside this closure,
-        // which completes before `draw` returns, so `'1` is always valid.
-        // `*mut RFrame` is invariant over its lifetime parameter, so we use
-        // transmute to reinterpret the lifetime rather than a plain cast.
         term.draw(|frame| {
             let py_frame = Frame {
                 ptr: unsafe {
@@ -393,7 +387,7 @@ impl Terminal {
                     )
                 },
             };
-            Python::with_gil(|py| {
+            Python::attach(|py| {
                 if let Ok(obj) = Py::new(py, py_frame) {
                     let _ = draw_fn.call1((obj,));
                 }
@@ -406,13 +400,6 @@ impl Terminal {
 
     // ── Events ───────────────────────────────────────────────────────────────
 
-    /// Poll for a keyboard event.
-    ///
-    /// Args:
-    ///     timeout_ms: Milliseconds to wait. 0 = non-blocking.
-    ///
-    /// Returns:
-    ///     A `KeyEvent` if a key was pressed, otherwise `None`.
     #[pyo3(signature = (timeout_ms=0))]
     pub fn poll_event(&self, timeout_ms: u64) -> PyResult<Option<PyKeyEvent>> {
         let timeout = std::time::Duration::from_millis(timeout_ms);
@@ -438,17 +425,19 @@ impl Terminal {
     // ── Sizing ───────────────────────────────────────────────────────────────
 
     /// The current terminal area.
+    ///
+    /// ratatui 0.30: `Terminal::size()` returns `Result<Rect, B::Error>`.
     pub fn area(&mut self) -> PyResult<Rect> {
         let term = self
             .inner
             .as_mut()
             .ok_or_else(|| PyRuntimeError::new_err("Terminal not initialised"))?;
+        // Terminal::size() → Result<Rect, io::Error> for CrosstermBackend.
         Ok(Rect {
-            inner: term.get_frame().area(),
+            inner: term.size().map_err(io_err_to_py)?.into(),
         })
     }
 
-    /// Force a full redraw on the next `draw()` call.
     pub fn clear(&mut self) -> PyResult<()> {
         let term = self
             .inner
@@ -457,7 +446,6 @@ impl Terminal {
         term.clear().map_err(io_err_to_py)
     }
 
-    /// Hide the cursor.
     pub fn hide_cursor(&mut self) -> PyResult<()> {
         let term = self
             .inner
@@ -466,7 +454,6 @@ impl Terminal {
         term.hide_cursor().map_err(io_err_to_py)
     }
 
-    /// Show the cursor.
     pub fn show_cursor(&mut self) -> PyResult<()> {
         let term = self
             .inner
@@ -477,7 +464,6 @@ impl Terminal {
 
     // ── Async helpers ─────────────────────────────────────────────────────────
 
-    /// Async context manager entry (returns self).
     pub fn __aenter__<'a>(
         mut slf: PyRefMut<'a, Self>,
         _py: Python<'_>,
@@ -491,14 +477,13 @@ impl Terminal {
         Ok(slf)
     }
 
-    /// Async context manager exit (restores terminal).
     pub fn __aexit__(
         &mut self,
         py: Python<'_>,
         _exc_type: &Bound<'_, PyAny>,
         _exc_val: &Bound<'_, PyAny>,
         _exc_tb: &Bound<'_, PyAny>,
-    ) -> PyResult<PyObject> {
+    ) -> PyResult<Py<PyAny>> {
         self.restore()?;
         Ok(py.None())
     }

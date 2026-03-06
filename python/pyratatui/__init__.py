@@ -1,5 +1,5 @@
 """
-pyratatui — Python bindings for ratatui 0.29
+pyratatui — Python bindings for ratatui 0.30
 ===============================================
 
 A production-grade, Pythonic bridge to ratatui — Rust's high-performance
@@ -41,6 +41,7 @@ from ._pyratatui import (
     Color,
     Constraint,
     CrosstermBackend,
+    CursorMove,
     Direction,
     Effect,
     EffectManager,
@@ -48,6 +49,7 @@ from ._pyratatui import (
     Frame,
     Gauge,
     Interpolation,
+    KnownSizeWrapper,
     Layout,
     LayoutError,
     Line,
@@ -60,6 +62,8 @@ from ._pyratatui import (
     Motion,
     Paragraph,
     PasswordPrompt,
+    Popup,
+    PopupState,
     PromptStatus,
 )
 from ._pyratatui import (
@@ -67,12 +71,17 @@ from ._pyratatui import (
 )  # Meta; ── Exceptions ──────────────────────────────────────────────; ── Style ───────────────────────────────────────────────────; ── Text primitives ─────────────────────────────────────────; ── Layout ──────────────────────────────────────────────────; ── Buffer ──────────────────────────────────────────────────; ── Widgets ─────────────────────────────────────────────────; ── Terminal / Frame ────────────────────────────────────────; ── Events ──────────────────────────────────────────────────; ── Effects (TachyonFX) ─────────────────────────────────────; ── Prompts ──────────────────────────────────────────────────────────
 from ._pyratatui import (
     PyratatuiError,
+    QrCodeWidget,
+    QrColors,
     Rect,
     RenderError,
     Row,
     Scrollbar,
     ScrollbarOrientation,
     ScrollbarState,
+    Scrolling,
+    ScrollView,
+    ScrollViewState,
     Span,
     Sparkline,
     Style,
@@ -82,6 +91,7 @@ from ._pyratatui import (
     Tabs,
     Terminal,
     Text,
+    TextArea,
     TextPrompt,
     TextRenderStyle,
     TextState,
@@ -169,4 +179,18 @@ __all__ = [
     "PasswordPrompt",
     "prompt_text",
     "prompt_password",
+    # Popups
+    "Popup",
+    "PopupState",
+    "KnownSizeWrapper",
+    # TextArea
+    "TextArea",
+    "CursorMove",
+    "Scrolling",
+    # ScrollView
+    "ScrollView",
+    "ScrollViewState",
+    # QrCode
+    "QrCodeWidget",
+    "QrColors",
 ]

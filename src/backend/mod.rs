@@ -11,7 +11,8 @@ use pyo3::prelude::*;
 ///
 /// This is selected automatically when you create a `Terminal()`.
 /// You do not normally need to construct this yourself.
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
+#[derive(Clone)]
 pub struct CrosstermBackend;
 
 #[pymethods]

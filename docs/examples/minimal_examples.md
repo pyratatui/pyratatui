@@ -9,7 +9,6 @@ Ten standalone, copy-paste-ready demos — each under 40 lines, covering every m
 The absolute minimum: one `Paragraph` in a `Block`, quit on `q`.
 
 ```python
-# examples/01_hello_world.py
 from pyratatui import Terminal, Paragraph, Block, Style, Color
 
 with Terminal() as term:
@@ -34,7 +33,6 @@ with Terminal() as term:
 Vertical split: header / body / footer.
 
 ```python
-# examples/02_layout.py
 from pyratatui import (
     Terminal, Layout, Constraint, Direction,
     Paragraph, Block, Style, Color,
@@ -82,7 +80,6 @@ with Terminal() as term:
 `Span` → `Line` → `Text` hierarchy with per-span colors and alignment.
 
 ```python
-# examples/03_styled_text.py
 from pyratatui import (
     Terminal, Paragraph, Text, Line, Span,
     Block, Style, Color,
@@ -137,7 +134,6 @@ with Terminal() as term:
 Scrollable list with keyboard navigation.
 
 ```python
-# examples/04_list_navigation.py
 from pyratatui import (
     Terminal, List, ListItem, ListState,
     Block, Style, Color, BorderType,
@@ -183,7 +179,6 @@ with Terminal() as term:
 Animated `Gauge` that fills up automatically.
 
 ```python
-# examples/05_progress_bar.py
 import time
 from pyratatui import Terminal, Gauge, Block, Style, Color
 
@@ -226,7 +221,6 @@ with Terminal() as term:
 Keyboard-navigable table with per-cell styling.
 
 ```python
-# examples/06_table_dynamic.py
 from pyratatui import (
     Terminal, Table, Row, Cell, TableState,
     Constraint, Block, Style, Color, Paragraph,
@@ -284,7 +278,6 @@ from pyratatui import Layout  # ensure import for the example above
 `BarChart` with `BarGroup` and styled bars.
 
 ```python
-# examples/07_barchart.py
 from pyratatui import (
     Terminal, BarChart, BarGroup, Bar,
     Block, Style, Color,
@@ -325,7 +318,6 @@ with Terminal() as term:
 Sparkline showing a live rolling window of values.
 
 ```python
-# examples/08_sparkline.py
 import math, time
 from pyratatui import Terminal, Sparkline, Block, Style, Color
 
@@ -362,7 +354,6 @@ with Terminal() as term:
 Multi-tab UI with keyboard switching.
 
 ```python
-# examples/09_tabs.py
 from pyratatui import (
     Terminal, Tabs, Layout, Constraint, Direction,
     Paragraph, Block, Style, Color,
@@ -418,7 +409,6 @@ with Terminal() as term:
 Fade-in animation on startup, then continuous fade cycle.
 
 ```python
-# examples/10_fade_effect.py
 import time
 from pyratatui import (
     Terminal, Paragraph, Block, Style, Color,

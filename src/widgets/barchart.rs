@@ -1,17 +1,34 @@
 // src/widgets/barchart.rs
 //! Python bindings for `BarChart`, `Bar`, and `BarGroup`.
+//!
+//! ratatui 0.30 breaking changes:
+//! - `Bar::label()` and `BarGroup::label()` now accept `Into<Line<'a>>` instead
+//!   of `Into<Cow<'a, str>>`.  Callers that passed `"foo".into()` now just pass `"foo"`.
+//!   Our code creates `Line::from(string)` explicitly — that still compiles.
+//! - `Bar::text_value()` now accepts `Into<Cow<'static, str>>` — unchanged for us.
+//! - `Bar` now implements `Styled`.
+//! - New constructors: `Bar::new(label, value)`, `BarGroup::new(label, bars)`,
+//!   `BarChart::grouped(groups)`, `BarChart::vertical(groups)`, etc.
 
 use pyo3::prelude::*;
 use ratatui::layout::Direction as RDirection;
-use ratatui::widgets::BarChart as RBarChart;
-use ratatui::widgets::{Bar as RBar, BarGroup as RBarGroup};
+use ratatui::text::Line as RLine;
+use ratatui::widgets::{Bar as RBar, BarChart as RBarChart, BarGroup as RBarGroup};
 
 use crate::layout::Direction;
 use crate::style::Style;
 use crate::widgets::block::Block;
 
+// ─── Bar ─────────────────────────────────────────────────────────────────────
+
 /// A single bar in a bar chart.
-#[pyclass(module = "pyratatui")]
+///
+/// ```python
+/// from pyratatui import Bar
+///
+/// bar = Bar(10, "January")
+/// ```
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Bar {
     label: Option<String>,
@@ -25,7 +42,9 @@ impl Bar {
     pub(crate) fn to_ratatui(&self) -> RBar<'static> {
         let mut b = RBar::default().value(self.value);
         if let Some(ref l) = self.label {
-            b = b.label(ratatui::text::Line::from(l.clone()));
+            // ratatui 0.30: label() accepts Into<Line<'a>>.
+            // RLine implements Into<Line> so this is fine.
+            b = b.label(RLine::from(l.clone()));
         }
         if let Some(ref s) = self.style {
             b = b.style(s.inner);
@@ -34,6 +53,7 @@ impl Bar {
             b = b.value_style(s.inner);
         }
         if let Some(ref tv) = self.text_value {
+            // text_value() still accepts Into<Cow<'static, str>>.
             b = b.text_value(tv.clone());
         }
         b
@@ -53,6 +73,7 @@ impl Bar {
             text_value: None,
         }
     }
+
     pub fn style(&self, style: &Style) -> Bar {
         let mut b = self.clone();
         b.style = Some(style.clone());
@@ -73,8 +94,16 @@ impl Bar {
     }
 }
 
+// ─── BarGroup ─────────────────────────────────────────────────────────────────
+
 /// A labelled group of bars.
-#[pyclass(module = "pyratatui")]
+///
+/// ```python
+/// from pyratatui import BarGroup, Bar
+///
+/// group = BarGroup([Bar(10, "Jan"), Bar(15, "Feb")], "Q1")
+/// ```
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct BarGroup {
     label: Option<String>,
@@ -86,7 +115,7 @@ impl BarGroup {
         let bars: Vec<RBar<'static>> = self.bars.iter().map(|b| b.to_ratatui()).collect();
         let mut g = RBarGroup::default().bars(&bars);
         if let Some(ref l) = self.label {
-            g = g.label(ratatui::text::Line::from(l.clone()));
+            g = g.label(RLine::from(l.clone()));
         }
         g
     }
@@ -107,6 +136,8 @@ impl BarGroup {
     }
 }
 
+// ─── BarChart ─────────────────────────────────────────────────────────────────
+
 /// A vertical or horizontal bar chart.
 ///
 /// ```python
@@ -117,7 +148,7 @@ impl BarGroup {
 ///     .bar_width(5)
 ///     .max(20))
 /// ```
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct BarChart {
     data: Vec<BarGroup>,
@@ -149,6 +180,7 @@ impl BarChart {
         for g in groups {
             chart = chart.data(g);
         }
+
         if let Some(m) = self.max {
             chart = chart.max(m);
         }
@@ -189,6 +221,7 @@ impl BarChart {
             direction: Direction::Vertical,
         }
     }
+
     pub fn data(&self, group: &BarGroup) -> BarChart {
         let mut c = self.clone();
         c.data.push(group.clone());

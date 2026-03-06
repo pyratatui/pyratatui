@@ -19,9 +19,7 @@ from pyratatui import (
     Color,
     Constraint,
     Direction,
-    Effect,
     EffectManager,
-    Interpolation,
     Layout,
     Line,
     Paragraph,
@@ -171,15 +169,15 @@ with Terminal() as term:
             )
 
             src_lines = [
-                Line([Span(l, Style().fg(Color.gray()))])
-                for l in dsl_src.strip().splitlines()
+                Line([Span(ln, Style().fg(Color.gray()))])
+                for ln in dsl_src.strip().splitlines()
             ]
 
             preview_lines = [
                 Line([Span("Preview:", Style().fg(Color.cyan()).bold())]),
                 *[
-                    Line([Span(l, Style().fg(Color.white()))])
-                    for l in PREVIEW_TEXT.splitlines()
+                    Line([Span(ln, Style().fg(Color.white()))])
+                    for ln in PREVIEW_TEXT.splitlines()
                 ],
                 Line([]),
                 Line([Span("Status: ", Style().bold()), status_span]),
@@ -193,7 +191,7 @@ with Terminal() as term:
                 Paragraph(Text(preview_lines)).block(
                     Block()
                     .bordered()
-                    .title(f" Effect {_i+1}/{len(compiled)}: {label} ")
+                    .title(f" Effect {_i + 1}/{len(compiled)}: {label} ")
                 ),
                 body[1],
             )

@@ -5,7 +5,7 @@ use ratatui::widgets::Clear as RClear;
 /// A widget that clears its area (paints it with background colour).
 ///
 /// Useful for overlays and popup dialogs.
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Clear;
 

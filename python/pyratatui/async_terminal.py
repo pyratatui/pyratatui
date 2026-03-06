@@ -27,8 +27,9 @@ event loop during ``poll_event``.  The fix is dead simple:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import time
-from typing import AsyncIterator, Callable, Optional
+from collections.abc import AsyncIterator, Callable
 
 from ._pyratatui import Frame
 from ._pyratatui import PyKeyEvent as KeyEvent
@@ -53,21 +54,19 @@ class AsyncTerminal:
     """
 
     def __init__(self) -> None:
-        self._term: Optional[Terminal] = None
+        self._term: Terminal | None = None
 
     # ── Context manager ──────────────────────────────────────────────────────
 
-    async def __aenter__(self) -> "AsyncTerminal":
+    async def __aenter__(self) -> AsyncTerminal:
         self._term = Terminal()
         self._term.__enter__()
         return self
 
     async def __aexit__(self, *args: object) -> bool:
         if self._term is not None:
-            try:
+            with contextlib.suppress(Exception):
                 self._term.restore()
-            except Exception:
-                pass
             self._term = None
         return False
 
@@ -81,7 +80,7 @@ class AsyncTerminal:
 
     # ── Events ───────────────────────────────────────────────────────────────
 
-    async def poll_event(self, timeout_ms: int = 0) -> Optional[KeyEvent]:
+    async def poll_event(self, timeout_ms: int = 0) -> KeyEvent | None:
         """
         Poll for a keyboard event without leaving the main thread.
 
@@ -101,7 +100,7 @@ class AsyncTerminal:
         fps: float = 30.0,
         *,
         stop_on_quit: bool = True,
-    ) -> AsyncIterator[Optional[KeyEvent]]:
+    ) -> AsyncIterator[KeyEvent | None]:
         """
         Async generator yielding one tick per frame at the requested rate.
 
@@ -126,9 +125,12 @@ class AsyncTerminal:
             # Non-blocking poll — always on the main event-loop thread.
             ev = self._term.poll_event(0)
 
-            if stop_on_quit and ev is not None:
-                if ev.code == "q" or (ev.code == "c" and ev.ctrl):
-                    return
+            if (
+                stop_on_quit
+                and ev is not None
+                and (ev.code == "q" or (ev.code == "c" and ev.ctrl))
+            ):
+                return
 
             yield ev
 

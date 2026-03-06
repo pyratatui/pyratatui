@@ -1,8 +1,12 @@
 // src/widgets/sparkline.rs
+//! ratatui 0.30 breaking change: `Sparkline::data()` now accepts
+//! `IntoIterator<Item = SparklineBar>` instead of `&[u64]`.
+//! `SparklineBar` has `From<u64>` so we convert our Vec<u64> using `.map()`.
+
 use crate::style::Style;
 use crate::widgets::block::Block;
 use pyo3::prelude::*;
-use ratatui::widgets::Sparkline as RSparkline;
+use ratatui::widgets::{Sparkline as RSparkline, SparklineBar};
 
 /// A compact single-row sparkline chart.
 ///
@@ -13,7 +17,7 @@ use ratatui::widgets::Sparkline as RSparkline;
 ///     .data([10, 20, 15, 35, 25, 40, 30])
 ///     .style(Style().fg(Color.green())))
 /// ```
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Sparkline {
     data: Vec<u64>,
@@ -24,7 +28,9 @@ pub struct Sparkline {
 
 impl Sparkline {
     pub(crate) fn to_ratatui(&self) -> RSparkline<'static> {
-        let mut s = RSparkline::default().data(self.data.clone());
+        // ratatui 0.30: SparklineBar has From<u64>, so convert each element.
+        let bars: Vec<SparklineBar> = self.data.iter().copied().map(SparklineBar::from).collect();
+        let mut s = RSparkline::default().data(bars);
         if let Some(ref b) = self.block {
             s = s.block(b.to_ratatui());
         }
@@ -49,6 +55,7 @@ impl Sparkline {
             style: None,
         }
     }
+
     pub fn data(&self, data: Vec<u64>) -> Sparkline {
         let mut s = self.clone();
         s.data = data;

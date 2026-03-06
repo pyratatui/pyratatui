@@ -5,17 +5,7 @@ Demonstrates: Span, Line, Text, Style, Color, Modifier.
 Press q to quit.
 """
 
-from pyratatui import (
-    Block,
-    Color,
-    Line,
-    Modifier,
-    Paragraph,
-    Span,
-    Style,
-    Terminal,
-    Text,
-)
+from pyratatui import Block, Color, Line, Paragraph, Span, Style, Terminal, Text
 
 with Terminal() as term:
     while True:

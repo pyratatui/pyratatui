@@ -316,6 +316,6 @@ with Terminal() as term:
 
 | File | Description |
 |---|---|
-| `examples/prompt_text.py` | Single text field with readline hints |
-| `examples/prompt_confirm.py` | Yes/No confirmation prompt |
-| `examples/prompt_select.py` | Arrow-key selection menu |
+| `examples/23_prompt_text.py` | Single text field with readline hints |
+| `examples/21_prompt_confirm.py` | Yes/No confirmation prompt |
+| `examples/22_prompt_select.py` | Arrow-key selection menu |

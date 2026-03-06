@@ -23,7 +23,8 @@ use crate::text::Span;
 /// buf.set_string(0, 0, "Hello!", None)
 /// content = buf.get_string(0, 0, 6)
 /// ```
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
+#[derive(Clone)]
 pub struct Buffer {
     pub(crate) inner: RBuffer,
 }

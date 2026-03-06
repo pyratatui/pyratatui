@@ -5,6 +5,7 @@ Demonstrates: AsyncTerminal, asyncio tasks, reactive data updates, live counter.
 """
 
 import asyncio
+import contextlib
 import random
 import time
 
@@ -56,7 +57,7 @@ async def main():
 
     async with AsyncTerminal() as term:
         term.hide_cursor()
-        async for ev in term.events(fps=20):
+        async for _ev in term.events(fps=20):
             cpu = state["cpu"]
             mem = state["mem"]
             reqs = state["requests"]
@@ -171,10 +172,8 @@ async def main():
             term.draw(ui)
 
     metrics_task.cancel()
-    try:
+    with contextlib.suppress(asyncio.CancelledError):
         await metrics_task
-    except asyncio.CancelledError:
-        pass
 
 
 asyncio.run(main())

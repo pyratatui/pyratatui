@@ -6,9 +6,9 @@ python -m pip install --upgrade ruff black isort
 # Optional: setup isort config
 # Set-Content -Path .\pyproject.toml -Value "[tool.isort]`nprofile = 'black'"
 
-# Run Python formatters
-Write-Host "Running Ruff format..."
-ruff format . --exit-zero
+# Run Ruff to automatically fix unused imports and other issues
+Write-Host "Running Ruff (auto-fix unused imports)..."
+ruff check . --fix
 
 Write-Host "Running isort..."
 python -m isort .

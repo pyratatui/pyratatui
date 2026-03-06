@@ -76,6 +76,21 @@ Set title alignment: `"left"` (default), `"center"`, `"right"`.
 
 Add inner padding between the border and the content area.
 
+#### `.inner(area: Rect) → Rect`
+
+Compute the inner area of a block for a given outer `area`. This subtracts
+borders and padding from the provided `Rect`, returning the space available
+for content rendered inside the block.
+
+```python
+block = Block().bordered().title("Panel")
+inner = block.inner(frame.area)   # area minus 1-cell border on each side
+frame.render_widget(block, frame.area)
+frame.render_widget(content, inner)
+```
+
+> **Added in 0.2.0.** Use this instead of manually computing `Rect(x+1, y+1, w-2, h-2)`.
+
 ### Example
 
 ```python

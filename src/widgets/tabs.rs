@@ -14,7 +14,7 @@ use ratatui::widgets::Tabs as RTabs;
 ///     .highlight_style(Style().fg(Color.yellow()).bold())
 ///     .divider(" | "))
 /// ```
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Tabs {
     titles: Vec<String>,

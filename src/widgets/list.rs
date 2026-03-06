@@ -1,7 +1,13 @@
 // src/widgets/list.rs
 //! Python bindings for the `List` widget and `ListState`.
+//!
+//! ratatui 0.30 breaking change:
+//! - `List::highlight_symbol()` now accepts `Into<Line>` instead of `&str`.
+//!   A plain `&str` still satisfies `Into<Line<'_>>`, so no source change needed
+//!   at the Rust call site, but we use `.to_string()` to keep 'static lifetime.
 
 use pyo3::prelude::*;
+use ratatui::text::Line as RLine;
 use ratatui::widgets::{
     List as RList, ListDirection as RListDirection, ListItem as RListItem, ListState as RListState,
 };
@@ -11,7 +17,7 @@ use crate::text::Text;
 use crate::widgets::block::Block;
 
 /// Direction in which the list scrolls.
-#[pyclass(module = "pyratatui", eq, eq_int)]
+#[pyclass(module = "pyratatui", eq, eq_int, from_py_object)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum ListDirection {
     TopToBottom,
@@ -34,7 +40,7 @@ impl ListDirection {
 ///
 /// item = ListItem("Server A", Style().fg(Color.green()))
 /// ```
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct ListItem {
     text: Text,
@@ -62,7 +68,6 @@ impl ListItem {
         }
     }
 
-    /// Create a `ListItem` from an existing `Text` object.
     #[staticmethod]
     pub fn from_text(text: &Text) -> ListItem {
         ListItem {
@@ -92,7 +97,7 @@ impl ListItem {
 /// state.select_next() # move down
 /// print(state.selected)
 /// ```
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct ListState {
     pub(crate) inner: RListState,
@@ -107,39 +112,29 @@ impl ListState {
         }
     }
 
-    /// Select item at `index`, or deselect if `None`.
     #[pyo3(signature = (index=None))]
     pub fn select(&mut self, index: Option<usize>) {
         self.inner.select(index);
     }
 
-    /// Move selection to the next item.
     pub fn select_next(&mut self) {
         self.inner.select_next();
     }
-
-    /// Move selection to the previous item.
     pub fn select_previous(&mut self) {
         self.inner.select_previous();
     }
-
-    /// Select the first item.
     pub fn select_first(&mut self) {
         self.inner.select_first();
     }
-
-    /// Select the last item in a list of `count` items.
     pub fn select_last(&mut self) {
         self.inner.select_last();
     }
 
-    /// Currently selected index, or `None`.
     #[getter]
     pub fn selected(&self) -> Option<usize> {
         self.inner.selected()
     }
 
-    /// Scroll offset (rows hidden above the top).
     #[getter]
     pub fn offset(&self) -> usize {
         self.inner.offset()
@@ -163,9 +158,8 @@ impl ListState {
 ///
 /// state = ListState()
 /// state.select(0)
-/// # pass both lst and state to frame.render_stateful_widget(...)
 /// ```
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct List {
     items: Vec<ListItem>,
@@ -181,6 +175,7 @@ impl List {
     pub(crate) fn to_ratatui(&self) -> RList<'_> {
         let items: Vec<RListItem<'static>> = self.items.iter().map(|i| i.to_ratatui()).collect();
         let mut lst = RList::new(items);
+
         if let Some(ref b) = self.block {
             lst = lst.block(b.to_ratatui());
         }
@@ -191,7 +186,9 @@ impl List {
             lst = lst.highlight_style(s.inner);
         }
         if let Some(ref sym) = self.highlight_symbol {
-            lst = lst.highlight_symbol(sym.as_str());
+            // ratatui 0.30: highlight_symbol() now takes Into<Line>.
+            // RLine::from(&str) implements Into<Line>, and String → &str is cheap.
+            lst = lst.highlight_symbol(RLine::from(sym.clone()));
         }
         lst = lst.direction(self.direction.to_ratatui());
         if self.repeat_highlight_symbol {

@@ -6,8 +6,7 @@ These allow a dead-simple entry point similar to ratatui's `ratatui::run()`.
 
 from __future__ import annotations
 
-import asyncio
-from typing import Awaitable, Callable, Optional
+from collections.abc import Callable
 
 from ._pyratatui import Frame, Terminal
 from .async_terminal import AsyncTerminal
@@ -17,7 +16,7 @@ def run_app(
     ui_fn: Callable[[Frame], None],
     *,
     fps: float = 30.0,
-    on_key: Optional[Callable[[object], bool]] = None,
+    on_key: Callable[[object], bool] | None = None,
 ) -> None:
     """
     Run a simple synchronous TUI application.
@@ -59,7 +58,7 @@ async def run_app_async(
     ui_fn: Callable[[Frame], None],
     *,
     fps: float = 30.0,
-    on_key: Optional[Callable[[object], bool]] = None,
+    on_key: Callable[[object], bool] | None = None,
 ) -> None:
     """
     Run a simple async TUI application.

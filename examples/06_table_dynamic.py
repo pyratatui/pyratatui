@@ -97,23 +97,23 @@ with Terminal() as term:
                 for r in rows
             ]
 
-            frame.render_stateful_table(
-                Table(
-                    tbl_rows,
+            # ✅ Correct API: Table(rows).column_widths([...]).header(row)
+            table = (
+                Table(tbl_rows)
+                .column_widths(
                     [
                         Constraint.fill(1),
                         Constraint.length(8),
                         Constraint.length(8),
                         Constraint.length(12),
-                    ],
-                    header=header,
+                    ]
                 )
+                .header(header)
                 .block(Block().bordered().title("Services  (auto-refresh 1.5s)"))
                 .highlight_style(Style().fg(Color.yellow()).bold())
-                .highlight_symbol("▶ "),
-                chunks[0],
-                state,
+                .highlight_symbol("▶ ")
             )
+            frame.render_stateful_table(table, chunks[0], state)
             frame.render_widget(
                 Paragraph.from_string(" ↑/↓: Select  r: Refresh  q: Quit").style(
                     Style().fg(Color.dark_gray())

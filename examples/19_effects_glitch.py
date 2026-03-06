@@ -1,5 +1,5 @@
 """
-examples/effects_glitch.py — TachyonFX dissolve / coalesce "glitch" demo.
+examples/19_effects_glitch.py — TachyonFX dissolve / coalesce "glitch" demo.
 
 Demonstrates:
   - Effect.dissolve()  — cells scatter and disappear
@@ -16,12 +16,9 @@ import time
 from pyratatui import (
     Block,
     Color,
-    Constraint,
-    Direction,
     Effect,
     EffectManager,
     Interpolation,
-    Layout,
     Line,
     Paragraph,
     Span,

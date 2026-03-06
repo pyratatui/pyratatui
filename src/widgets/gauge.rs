@@ -19,7 +19,7 @@ use crate::widgets::block::Block;
 ///     .style(Style().fg(Color.green()))
 ///     .label("42%"))
 /// ```
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Gauge {
     block: Option<Block>,
@@ -121,7 +121,7 @@ impl Gauge {
 ///     .ratio(0.65)
 ///     .style(Style().fg(Color.blue())))
 /// ```
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct LineGauge {
     block: Option<Block>,
@@ -141,7 +141,8 @@ impl LineGauge {
         };
         let mut g = RLineGauge::default()
             .ratio(self.ratio.clamp(0.0, 1.0))
-            .line_set(ls);
+            .filled_symbol(ls.horizontal)
+            .unfilled_symbol(line::NORMAL.horizontal);
 
         if let Some(ref b) = self.block {
             g = g.block(b.to_ratatui());

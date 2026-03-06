@@ -2,7 +2,7 @@
 examples/async_progress.py — Live async progress bar demo.
 
 Run after installing pyratatui:
-    python examples/async_progress.py
+    python examples/18_async_progress.py
 """
 
 from __future__ import annotations

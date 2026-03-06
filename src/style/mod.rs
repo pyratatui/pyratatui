@@ -23,7 +23,7 @@ use ratatui::style::{Color as RColor, Modifier as RModifier, Style as RStyle};
 /// c3 = Color.rgb(255, 128, 0)
 /// c4 = Color.reset()
 /// ```
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Color {
     pub(crate) inner: RColor,
@@ -167,7 +167,7 @@ impl Color {
 /// from pyratatui import Modifier
 /// m = Modifier.bold() | Modifier.italic()
 /// ```
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Modifier {
     pub(crate) inner: RModifier,
@@ -270,7 +270,7 @@ impl Modifier {
 ///     .bg(Color.black())
 ///     .add_modifier(Modifier.bold()))
 /// ```
-#[pyclass(module = "pyratatui")]
+#[pyclass(module = "pyratatui", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Style {
     pub(crate) inner: RStyle,

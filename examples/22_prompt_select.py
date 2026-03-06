@@ -1,5 +1,5 @@
 """
-examples/prompt_select.py — Arrow-key selection prompt demo.
+examples/22_prompt_select.py — Arrow-key selection prompt demo.
 
 Demonstrates a menu-selection interaction built on pyratatui primitives:
   - ↑/↓ (or j/k) to navigate
@@ -11,8 +11,6 @@ the core event loop without needing a dedicated SelectPrompt class.
 
 Press ↑/↓ to navigate, Enter to select, Esc to abort.
 """
-
-import time
 
 from pyratatui import (
     Block,
