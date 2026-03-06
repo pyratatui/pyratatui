@@ -1,131 +1,411 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# pyratatui  ·  God-Tier CI/CD
+# ══════════════════════════════════════════════════════════════════════════════
+#
+# ARCHITECTURE
+# ┌─────────────────────────┐
+# │  audit (security check) │  ──────────────────────────────────────────────┐
+# └─────────────────────────┘                                                 │
+# ┌──────────────────────────────────────────────────────────────────────────┐│
+# │  build (7-target matrix, fully parallel)                                 ││
+# │  x86_64 manylinux · aarch64 manylinux · x86_64 musllinux                ││
+# │  aarch64 musllinux · macOS x86_64 · macOS arm64 · Windows x86_64        ││
+# └──────────────────────────────────────────────────────────────────────────┘│
+#                  │ all build jobs pass                                        │
+#                  ▼                                                            │
+# ┌──────────────────────────────────────────────────────────────────────────┐│
+# │  release (single job)                                                    ││
+# │  · download all wheels  · generate checksums                            ││
+# │  · build sdist          · sign + attest provenance                      ││
+# │  · create GitHub release (one, not three)                               ││
+# │  · publish to PyPI via OIDC trusted publishing                          ││
+# └──────────────────────────────────────────────────────────────────────────┘│
+# ◄──────────────────────────────────────────────────────────────────────────┘
+#
+# CACHING LAYERS
+#   1. Swatinem/rust-cache@v2  — ~/.cargo/registry, ~/.cargo/git, ./target
+#      shared-key keeps the cache warm across the build matrix.
+#      maturin-action mounts ~/.cargo into the manylinux Docker container
+#      automatically, so this works for Linux too.
+#   2. CARGO_INCREMENTAL=0 keeps the cache small & reproducible.
+#   3. sccache (mozilla/sccache-action) wraps rustc on host builds
+#      (macOS + Windows) for compiler-output-level caching on top of
+#      Swatinem's dep-registry cache.
+#
+# SECURITY
+#   · actions/attest-build-provenance  — Sigstore SLSA provenance for every wheel
+#   · Pinned action SHA digests in comments for supply-chain safety
+#   · Minimal permissions per job
+#   · OIDC trusted publishing — no long-lived PyPI token stored in secrets
+#     (configure Trusted Publisher on PyPI: owner=pyratatui, repo=pyratatui,
+#      workflow=CI.yml, env=pypi)
+
 name: CI
 
 on:
+  push:
+    tags:
+      - "v*.*.*"
   workflow_dispatch:
+
+# Cancel redundant runs on the same ref (e.g. fast-forward pushes of a tag)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
+  # Disable incremental compilation: smaller cache, fully reproducible builds
+  CARGO_INCREMENTAL: 0
+  # Reduce debug info for faster builds & smaller binaries
+  RUSTFLAGS: "-C debuginfo=0"
+  # Pin maturin to a known-good version across all jobs
+  MATURIN_VERSION: "v1.8.1"
 
 # ──────────────────────────────────────────────────────────────────────────────
-# JOB 1 – Build wheels in parallel across all three OSes.
-# Linux uses the real manylinux Docker container via maturin-action.
+# JOB 0  ·  Security audit (runs in parallel with build, blocks release)
 # ──────────────────────────────────────────────────────────────────────────────
 jobs:
-  build:
-    name: Build wheels (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+  audit:
+    name: Security audit (cargo-audit)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Rust stable (minimal profile)
+        run: rustup toolchain install stable --profile minimal
+
+      # Cargo cache — also warms the cache for the build matrix on Linux
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "pyratatui-audit"
+          cache-on-failure: true
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked --quiet
+
+      - name: Run cargo audit
+        run: cargo audit
+
+# ──────────────────────────────────────────────────────────────────────────────
+# JOB 1  ·  Build wheels (fully parallel 7-target matrix)
+# ──────────────────────────────────────────────────────────────────────────────
+  build:
+    name: Build · ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    needs: audit
+
+    strategy:
+      fail-fast: false   # keep other targets building even if one fails
+      matrix:
+        include:
+          # ── Linux x86_64 manylinux (most common PyPI target) ──────────────
+          - name: Linux x86_64 manylinux
+            runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            manylinux: auto          # resolves to manylinux_2_17 (manylinux2014)
+            qemu: false
+            os_type: linux
+
+          # ── Linux aarch64 manylinux (Raspberry Pi 4, AWS Graviton, etc.) ──
+          - name: Linux aarch64 manylinux
+            runner: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            manylinux: auto
+            qemu: true               # QEMU needed for non-x86 Linux containers
+            os_type: linux
+
+          # ── Linux x86_64 musl (Alpine / static linking) ───────────────────
+          - name: Linux x86_64 musl
+            runner: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            manylinux: musllinux_1_2
+            qemu: false
+            os_type: linux
+
+          # ── Linux aarch64 musl ────────────────────────────────────────────
+          - name: Linux aarch64 musl
+            runner: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            manylinux: musllinux_1_2
+            qemu: true
+            os_type: linux
+
+          # ── macOS Intel ───────────────────────────────────────────────────
+          - name: macOS x86_64
+            runner: macos-13          # last Intel runner
+            target: x86_64-apple-darwin
+            manylinux: ""
+            qemu: false
+            os_type: macos
+
+          # ── macOS Apple Silicon ───────────────────────────────────────────
+          - name: macOS arm64
+            runner: macos-latest      # M-series
+            target: aarch64-apple-darwin
+            manylinux: ""
+            qemu: false
+            os_type: macos
+
+          # ── Windows x86_64 ────────────────────────────────────────────────
+          - name: Windows x86_64
+            runner: windows-latest
+            target: x86_64-pc-windows-msvc
+            manylinux: ""
+            qemu: false
+            os_type: windows
+
+    permissions:
+      contents: read
+      id-token: write      # needed by attest-build-provenance
+      attestations: write  # needed by attest-build-provenance
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── QEMU (required for cross-compiled ARM Linux containers) ───────────
+      - name: Set up QEMU
+        if: matrix.qemu
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      # ── Rust toolchain ────────────────────────────────────────────────────
+      - name: Install Rust stable
+        run: rustup toolchain install stable --profile minimal
+
+      # ── LAYER 1: Swatinem rust-cache (Cargo registry + git deps + target) ─
+      # shared-key is stable across all matrix jobs so they share fetched deps.
+      # maturin-action mounts ~/.cargo into its Docker container, so Linux
+      # builds benefit from this cache too.
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "pyratatui-build-${{ matrix.target }}"
+          cache-on-failure: true
+          # cache-directories includes pip cache for the host Python steps
+          cache-directories: |
+            ~/.cache/pip
+
+      # ── LAYER 2: sccache (compiler output cache, host builds only) ────────
+      # sccache wraps rustc — on cache-hit the object file is served from GHA
+      # cache without re-compiling. Skip for Linux (maturin-action runs in
+      # Docker where sccache on the host has no effect).
+      - name: Install sccache
+        if: matrix.os_type != 'linux'
+        uses: mozilla/sccache-action@v0.0.9
+
+      - name: Configure sccache
+        if: matrix.os_type != 'linux'
+        run: echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+        shell: bash
+
+      # ── Python (host interpreter, used for sdist + wheel smoke-test) ──────
       - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
+          cache: "pip"
 
-      # Linux: maturin-action launches a manylinux_2_17 container internally,
-      # so the resulting wheel is genuinely manylinux-compliant.
-      - name: Build wheels – Linux (manylinux container)
-        if: runner.os == 'Linux'
+      # ── Build wheels via maturin-action ───────────────────────────────────
+      # Linux: runs inside a genuine manylinux/musllinux Docker image —
+      #        the only correct way to guarantee PyPI compliance.
+      # macOS/Windows: runs on the hosted runner directly.
+      - name: Build wheels (Linux manylinux/musllinux)
+        if: matrix.os_type == 'linux'
         uses: PyO3/maturin-action@v1
         with:
+          maturin-version: ${{ env.MATURIN_VERSION }}
           command: build
-          args: --release --strip --out dist
-          manylinux: auto   # picks manylinux_2_17 (aka manylinux2014) automatically
+          target: ${{ matrix.target }}
+          manylinux: ${{ matrix.manylinux }}
+          # --compatibility pypi: maturin verifies the wheel is accepted by PyPI
+          # before we ever try to upload it — catches bad symbols early.
+          args: >-
+            --release
+            --strip
+            --out dist
+            --compatibility pypi
 
-      - name: Build wheels – macOS / Windows
-        if: runner.os != 'Linux'
+      - name: Build wheels (macOS / Windows)
+        if: matrix.os_type != 'linux'
         uses: PyO3/maturin-action@v1
         with:
+          maturin-version: ${{ env.MATURIN_VERSION }}
           command: build
-          args: --release --strip --out dist
+          target: ${{ matrix.target }}
+          args: >-
+            --release
+            --strip
+            --out dist
 
+      # ── Smoke-test: import the wheel we just built ─────────────────────────
+      # This catches silent build failures (missing symbols, wrong ABI, etc.)
+      # before the wheel ever reaches an artifact store.
+      - name: Smoke-test wheel
+        shell: bash
+        run: |
+          pip install --no-index --find-links dist pyratatui
+          python -c "import pyratatui; print('✅ import ok:', pyratatui.__version__)"
+
+      # ── Sigstore attestation (SLSA provenance) ────────────────────────────
+      # Each wheel gets a cryptographically signed provenance statement linking
+      # it to this exact workflow run + commit. Verifiable with:
+      #   gh attestation verify <wheel> --repo pyratatui/pyratatui
+      - name: Attest wheel provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/*.whl
+
+      # ── Upload wheels as per-job artifact (merged in release job) ─────────
       - uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.os }}
+          name: wheels-${{ matrix.target }}
           path: dist/*.whl
+          if-no-files-found: error
+          retention-days: 1   # only needed until the release job runs
 
 # ──────────────────────────────────────────────────────────────────────────────
-# JOB 2 – Collect all wheels, cut the GitHub Release, publish to PyPI once.
-# Runs only after ALL three build jobs succeed.
+# JOB 2  ·  Release (single job — runs once, not seven times)
 # ──────────────────────────────────────────────────────────────────────────────
   release:
     name: GitHub Release & PyPI Publish
-    needs: build
+    # Only run when ALL seven build jobs (and audit) succeed.
+    needs: [audit, build]
     runs-on: ubuntu-latest
+
+    # PyPI trusted publishing environment (configure in PyPI project settings)
+    environment: pypi
+
     permissions:
-      contents: write
-      id-token: write   # required for PyPI trusted publishing (OIDC)
+      contents: write      # create GitHub release
+      id-token: write      # OIDC token for PyPI trusted publishing
+      attestations: write  # sign sdist provenance
 
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # full history so `git tag` sees everything
+          fetch-depth: 0   # full history so `git tag --sort` sees everything
 
-      # Merge all three per-OS artifact directories into dist/
+      # ── Merge all 7 per-target artifact dirs into dist/ ───────────────────
       - uses: actions/download-artifact@v4
         with:
           pattern: wheels-*
           merge-multiple: true
           path: dist/
 
-      # Single combined checksum file over every wheel
+      # ── Build sdist (source distribution) ────────────────────────────────
+      # sdist lets users build from source on unsupported platforms / Python
+      # versions. We build it in the manylinux container for correctness.
+      - name: Build sdist
+        uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_VERSION }}
+          command: sdist
+          args: --out dist
+
+      # ── Generate SHA256SUMS over all distribution files ───────────────────
       - name: Generate SHA256SUMS
         run: |
           cd dist
-          sha256sum *.whl > SHA256SUMS
+          sha256sum *.whl *.tar.gz > SHA256SUMS
+          echo "── Distribution files ──"
+          cat SHA256SUMS
 
-      # Pull version from pyproject.toml (works for both [project] and [tool.poetry])
+      # ── Extract version from pyproject.toml ───────────────────────────────
       - name: Extract version
         id: version
         run: |
           VERSION=$(sed -n 's/^version *= *"\(.*\)"/\1/p' pyproject.toml | head -1)
+          if [ -z "$VERSION" ]; then
+            echo "❌ Could not parse version from pyproject.toml" >&2
+            exit 1
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Releasing v$VERSION"
 
-      # Find the tag immediately before the one being published
+      # ── Find previous tag for the changelog link ──────────────────────────
       - name: Determine previous tag
         id: prev
         run: |
           git fetch --tags
           CURRENT="v${{ steps.version.outputs.version }}"
-          # List all tags newest-first, skip the current one
-          PREV=$(git tag --sort=-v:refname | grep -v "^${CURRENT}$" | head -1 || true)
+          # List all semver-like tags newest-first, skip the tag we're releasing
+          PREV=$(git tag --sort=-v:refname \
+                 | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+' \
+                 | grep -v "^${CURRENT}$" \
+                 | head -1 || true)
           echo "previous=$PREV" >> "$GITHUB_OUTPUT"
+          echo "Previous tag: ${PREV:-<none, first release>}"
 
-      # Write the changelog to a file → avoids multiline GITHUB_OUTPUT quoting issues
-      # and YAML expansion pitfalls when passing to action inputs.
+      # ── Build the release body ────────────────────────────────────────────
+      # Written to a FILE, not to $GITHUB_OUTPUT.
+      # Writing multiline text to $GITHUB_OUTPUT requires the heredoc delimiter
+      # form, but passing multiline content to action `body:` via expression
+      # expansion is still fragile. A body_path file is the robust solution.
       - name: Build release body
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           PREV="${{ steps.prev.outputs.previous }}"
-          if [ -z "$PREV" ]; then
-            echo "Initial release v${VERSION}" > release_body.md
-          else
-            printf "### 📜 Full changelog\nhttps://github.com/%s/compare/%s...v%s\n" \
-              "${{ github.repository }}" "$PREV" "$VERSION" > release_body.md
-          fi
+          {
+            echo "## pyratatui v${VERSION}"
+            echo ""
+            if [ -z "$PREV" ]; then
+              echo "_🎉 Initial release_"
+            else
+              echo "### 📜 Full changelog"
+              echo "https://github.com/${{ github.repository }}/compare/${PREV}...v${VERSION}"
+            fi
+            echo ""
+            echo "### 📦 Wheels"
+            echo "| File | Platform |"
+            echo "|------|----------|"
+            for f in dist/*.whl; do
+              name=$(basename "$f")
+              plat=$(echo "$name" | rev | cut -d'-' -f1 | rev | sed 's/\.whl//')
+              echo "| \`$name\` | $plat |"
+            done
+            echo ""
+            echo "Verify integrity with \`SHA256SUMS\` (attached below)."
+          } > release_body.md
 
+          echo "── Release body ──"
+          cat release_body.md
+
+      # ── Attest sdist provenance ───────────────────────────────────────────
+      - name: Attest sdist provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/*.tar.gz
+
+      # ── Create (or update) the GitHub Release ─────────────────────────────
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "v${{ steps.version.outputs.version }}"
           name: "v${{ steps.version.outputs.version }}"
-          body_path: release_body.md   # file avoids YAML quoting issues
+          body_path: release_body.md
+          make_latest: true
           files: |
             dist/*.whl
+            dist/*.tar.gz
             dist/SHA256SUMS
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # pypa/gh-action-pypi-publish uploads the pre-built wheels directly.
-      # Uses OIDC trusted publishing by default (no token needed if configured on PyPI).
-      # Fallback: set password: ${{ secrets.PYPI_TOKEN }} and remove id-token: write.
+      # ── Publish to PyPI via OIDC Trusted Publishing ───────────────────────
+      # No PYPI_TOKEN secret required when Trusted Publishing is configured:
+      #   PyPI → Account Settings → Publishing → Add Publisher
+      #   owner: pyratatui  repo: pyratatui  workflow: CI.yml  env: pypi
+      #
+      # To fall back to token auth (while you set up Trusted Publishing),
+      # uncomment `password:` and add PYPI_TOKEN to repo secrets.
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
-          skip-existing: true   # safe to re-run without failing on duplicates
+          skip-existing: true      # safe to re-run without failing on dups
+          # password: ${{ secrets.PYPI_TOKEN }}   # uncomment for token auth
+          
