@@ -46,19 +46,22 @@ jobs:
       - name: Install Rust stable
         run: rustup toolchain install stable --profile minimal
 
+      # Setup sccache on all platforms
+      - name: Set up sccache
+        run: |
+          if [[ "${{ matrix.os_type }}" == "linux" ]]; then
+            sudo apt-get update && sudo apt-get install -y sccache
+          fi
+        shell: bash
+
+      - name: Enable sccache
+        run: echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+        shell: bash
+
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: "pyratatui-${{ matrix.target }}"
           cache-on-failure: true
-
-      - name: Set up sccache
-        if: matrix.os_type != 'linux'
-        uses: mozilla/sccache-action@v0.0.9
-
-      - name: Enable sccache
-        if: matrix.os_type != 'linux'
-        shell: bash
-        run: echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
 
       - uses: actions/setup-python@v5
         with:
@@ -84,6 +87,10 @@ jobs:
           target: ${{ matrix.target }}
           args: --release --strip --out dist
 
+      - name: Show sccache stats
+        run: sccache --show-stats
+        shell: bash
+
       - uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.target }}
@@ -106,14 +113,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Merge all OS wheels into dist/
+      # Merge all OS wheels
       - uses: actions/download-artifact@v4
         with:
           pattern: wheels-*
           merge-multiple: true
           path: dist/
 
-      # Build source distribution
+      # Build sdist
       - name: Build sdist
         uses: PyO3/maturin-action@v1
         with:
@@ -121,11 +128,11 @@ jobs:
           command: sdist
           args: --out dist
 
-      # Generate SHA256SUMS for verification only
+      # Generate SHA256SUMS
       - name: Generate SHA256SUMS
         run: cd dist && sha256sum *.whl *.tar.gz > SHA256SUMS
 
-      # Verify SHA256SUMS (optional CI check)
+      # Verify SHA256SUMS
       - name: Verify SHA256SUMS
         run: |
           cd dist
@@ -167,7 +174,7 @@ jobs:
             fi
           } > release_body.md
 
-      # Upload wheels, sdist, and SHA256SUMS to GitHub release
+      # Create GitHub release (wheels + sdist + SHA256SUMS)
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
