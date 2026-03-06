@@ -1,9 +1,6 @@
 name: CI
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
   workflow_dispatch:
 
 concurrency:
@@ -74,7 +71,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
-          cache: "pip"
+          cache: ${{ matrix.os_type != 'linux' && 'pip' || '' }}
 
       # Linux: genuine manylinux_2_17 Docker container — no GLIBC symbol leakage
       - name: Build wheel (Linux)
@@ -200,4 +197,3 @@ jobs:
           packages-dir: dist/
           skip-existing: true
           # password: ${{ secrets.PYPI_TOKEN }}  # uncomment for token auth fallback
-          
