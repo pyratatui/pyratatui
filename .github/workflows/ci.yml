@@ -1,9 +1,6 @@
 name: CI
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
   workflow_dispatch:
 
 env:
@@ -132,4 +129,3 @@ jobs:
         with:
           packages-dir: dist/
           skip-existing: true   # safe to re-run without failing on duplicates
-          
