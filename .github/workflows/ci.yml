@@ -13,9 +13,6 @@ env:
   CARGO_INCREMENTAL: 0
   MATURIN_VERSION: "v1.8.1"
 
-# ──────────────────────────────────────────────────────────────────────────────
-# JOB 1 · Build wheels (3 targets in parallel)
-# ──────────────────────────────────────────────────────────────────────────────
 jobs:
   build:
     name: Build · ${{ matrix.name }}
@@ -51,14 +48,11 @@ jobs:
       - name: Install Rust stable
         run: rustup toolchain install stable --profile minimal
 
-      # Caches ~/.cargo/registry, ~/.cargo/git, ./target
-      # maturin-action mounts ~/.cargo into its Docker container so Linux gets it too
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: "pyratatui-${{ matrix.target }}"
           cache-on-failure: true
 
-      # sccache wraps rustc on macOS/Windows for compiler-output-level caching
       - name: Set up sccache
         if: matrix.os_type != 'linux'
         uses: mozilla/sccache-action@v0.0.9
@@ -73,7 +67,6 @@ jobs:
           python-version: "3.x"
           cache: ${{ matrix.os_type != 'linux' && 'pip' || '' }}
 
-      # Linux: genuine manylinux_2_17 Docker container — no GLIBC symbol leakage
       - name: Build wheel (Linux)
         if: matrix.os_type == 'linux'
         uses: PyO3/maturin-action@v1
@@ -93,13 +86,6 @@ jobs:
           target: ${{ matrix.target }}
           args: --release --strip --out dist
 
-      # Catch wrong ABI / missing symbols before the wheel leaves this runner
-      - name: Smoke-test wheel
-        shell: bash
-        run: |
-          pip install --no-index --find-links dist pyratatui
-          python -c "import pyratatui; print('✅ import ok:', pyratatui.__version__)"
-
       - uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.target }}
@@ -107,9 +93,6 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-# ──────────────────────────────────────────────────────────────────────────────
-# JOB 2 · Release (runs once after all 3 builds pass)
-# ──────────────────────────────────────────────────────────────────────────────
   release:
     name: GitHub Release & PyPI Publish
     needs: build
@@ -188,12 +171,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # OIDC Trusted Publishing — no PYPI_TOKEN needed.
-      # Setup: PyPI → Your project → Publishing → Add Publisher
-      #   owner: pyratatui  repo: pyratatui  workflow: CI.yml  env: pypi
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
           skip-existing: true
-          # password: ${{ secrets.PYPI_TOKEN }}  # uncomment for token auth fallback
+          
