@@ -111,12 +111,13 @@ jobs:
 
       - name: Generate & verify SHA256SUMS
         run: |
+          mkdir -p sha
           cd dist
-          sha256sum *.whl *.tar.gz > ../SHA256SUMS
+          sha256sum *.whl *.tar.gz > ../sha/SHA256SUMS
           while read SUM FILE; do
             echo "Verifying $FILE"
             echo "$SUM  $FILE" | sha256sum -c --status || { echo "SHA256 mismatch for $FILE"; exit 1; }
-          done < ../SHA256SUMS
+          done < ../sha/SHA256SUMS
 
       - name: Extract version
         id: version
@@ -152,8 +153,11 @@ jobs:
           } > release_body.md
 
 
-      - name: Add SHA256SUMS to dist for GitHub release
-        run: cp SHA256SUMS dist/SHA256SUMS
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+          skip-existing: true
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -165,13 +169,7 @@ jobs:
           files: |
             dist/*.whl
             dist/*.tar.gz
-            dist/SHA256SUMS
+            sha/SHA256SUMS
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          packages-dir: dist/
-          skip-existing: true
           
