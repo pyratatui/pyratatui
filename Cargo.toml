@@ -1,6 +1,6 @@
 [package]
 name    = "pyratatui"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 authors = ["pyratatui contributors"]
 description = """
@@ -22,42 +22,45 @@ pyo3     = { version = "0.28.2", features = ["abi3-py310"] }
 crossterm = "0.29"
 tokio    = { version = "1", features = ["full"] }
 
-# ── Ratatui 0.30 ────────────────────────────────────────────────────────────
-# The main ratatui crate re-exports everything from the new modular workspace
-# (ratatui-core, ratatui-widgets, ratatui-crossterm, …).
-# Application developers continue to depend on the top-level `ratatui` crate.
-# `crossterm_0_29` pins the bundled crossterm backend version so third-party
-# widget crates compiled against crossterm 0.29 can coexist without conflicts.
+# ── Ratatui 0.30 ─────────────────────────────────────────────────────────────
 ratatui = { version = "0.30", features = ["all-widgets", "crossterm_0_29"] }
 
-# ── Effects ──────────────────────────────────────────────────────────────────
-# tachyonfx is part of the ratatui-org (moved to github.com/ratatui/tachyonfx)
-# and is actively maintained against ratatui 0.30.
+# ── Effects ───────────────────────────────────────────────────────────────────
 tachyonfx = "0.25.0"
 
-# ── Third-party widget crates (all ratatui 0.30 compatible) ─────────────────
-# tui-popup 0.7.x — part of the tui-widgets suite, uses frame.area() / 0.30 API.
-tui-popup    = { version = "0.7", features = ["crossterm"] }
-
-# tui-scrollview 0.6.2 — uses StatefulWidget from ratatui 0.30.
+# ── Third-party widget crates (all ratatui 0.30 compatible) ──────────────────
+tui-popup     = { version = "0.7", features = ["crossterm"] }
 tui-scrollview = "0.6.2"
+tui-textarea  = "0.7.0"
 
-# tui-textarea 0.7.x — rhysd's actively-maintained crate.
-# tui-textarea 0.7 targets ratatui ^0.29 (= >=0.29, <0.30), which brings in
-# ratatui 0.29 as a separate dep alongside ratatui 0.30.
-# We add ratatui_compat so we can name the 0.29 types and bridge via transmute.
-tui-textarea = "0.7.0"
-
-# Compatibility shim: gives us a named handle to ratatui 0.29 so that
-# tui-textarea's Widget/Style/Block types can be used from our code.
-# Cargo will unify this with tui-textarea's own ratatui 0.29 dep.
+# Compatibility shim: named handle to ratatui 0.29 for tui-textarea bridging.
 ratatui_compat = { package = "ratatui", version = ">=0.29, <0.30" }
 
-# ── QR codes ─────────────────────────────────────────────────────────────────
-# tui-qrcode 0.2.2 targets ratatui-core ^0.1 / ratatui ^0.30 — fully compatible.
-# `qrcode` crate is kept because callers create QrCode values before the widget.
+# ── QR codes ──────────────────────────────────────────────────────────────────
 tui-qrcode = { version = "0.2.2", default-features = false }
 qrcode     = { version = "0.14",  default-features = false }
+
+# ── Calendar (time crate required by ratatui widget-calendar) ─────────────────
+time = { version = "0.3", features = ["local-offset"] }
+
+# ── New widget integrations ───────────────────────────────────────────────────
+# Bar graph widget (uses ratatui-core ^0.1, colorgrad 0.8)
+tui-bar-graph = "0.3"
+colorgrad     = "0.8"
+
+# Tree widget (uses ratatui-core ^0.1)
+tui-tree-widget = "0.24"
+
+# Markdown → Text converter (uses ratatui-core ^0.1)
+tui-markdown = "0.3"
+
+# Logger widget (uses ratatui ^0.30 directly)
+tui-logger = "0.18"
+log        = "0.4"
+
+# Image widget (default-features = false avoids libchafa requirement)
+ratatui-image = { version = "10", default-features = false, features = ["crossterm", "image-defaults"] }
+image         = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
 
 [features]
 default = []

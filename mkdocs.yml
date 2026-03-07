@@ -1,5 +1,5 @@
 site_name: pyratatui
-site_description: Python bindings for ratatui 0.29 + tachyonfx animations — fast, typed, idiomatic terminal UIs
+site_description: Python bindings for ratatui 0.30 — BarGraph, Tree, Markdown, Logger, Image widgets, tachyonfx effects, typed API
 site_url: https://pyratatui.github.io/pyratatui
 repo_url: https://github.com/pyratatui/pyratatui
 repo_name: pyratatui/pyratatui
@@ -91,6 +91,12 @@ nav:
       - TextArea: reference/textarea.md
       - ScrollView: reference/scrollview.md
       - QrCodeWidget: reference/qrcode.md
+      - Calendar: reference/calendar.md
+      - BarGraph: reference/bar_graph.md
+      - TreeWidget: reference/tree_widget.md
+      - Markdown: reference/markdown.md
+      - Logger: reference/logger.md
+      - ImageWidget: reference/image_widget.md
       - Buffer: reference/buffer.md
   - Examples:
       - Minimal Examples: examples/minimal_examples.md

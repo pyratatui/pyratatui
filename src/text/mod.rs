@@ -170,6 +170,47 @@ impl Text {
         }
         t
     }
+
+    /// Convert a ratatui `Text<'static>` into our Python `Text` wrapper.
+    ///
+    /// Used by the markdown converter so the result can be used directly
+    /// in Python as a `Text` value.
+    pub(crate) fn from_ratatui(t: RText<'static>) -> Self {
+        use crate::style::Style as PyStyle;
+        let lines = t
+            .lines
+            .into_iter()
+            .map(|rl| {
+                let align = rl.alignment.map(|a| match a {
+                    ratatui::layout::Alignment::Center => "center".to_string(),
+                    ratatui::layout::Alignment::Right => "right".to_string(),
+                    ratatui::layout::Alignment::Left => "left".to_string(),
+                });
+                let spans = rl
+                    .spans
+                    .into_iter()
+                    .map(|rs| Span {
+                        content: rs.content.into_owned(),
+                        style: if rs.style == ratatui::style::Style::default() {
+                            None
+                        } else {
+                            Some(PyStyle { inner: rs.style })
+                        },
+                    })
+                    .collect();
+                Line {
+                    spans,
+                    alignment: align,
+                    style: None,
+                }
+            })
+            .collect();
+        Self {
+            lines,
+            alignment: None,
+            style: None,
+        }
+    }
 }
 
 #[pymethods]

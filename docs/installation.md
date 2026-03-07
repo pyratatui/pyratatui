@@ -22,13 +22,12 @@ Pre-built wheels are available on PyPI for:
 - macOS x86\_64 and arm64 (universal2)
 - Windows x86\_64
 
-If a wheel is not available for your platform, pip automatically falls back to building from source (requires a Rust toolchain — see below).
+If no wheel is available for your platform, pip falls back to building from
+source (requires a Rust toolchain — see below).
 
 ---
 
 ## Virtual Environment (Recommended)
-
-Always install into an isolated virtual environment:
 
 ```bash
 python -m venv .venv
@@ -64,14 +63,14 @@ cd pyratatui
 maturin develop --release   # installs into the current virtualenv
 ```
 
-`--release` enables full Rust optimizations (strongly recommended for production).
+`--release` enables full Rust optimizations (strongly recommended).
 
 ### 4. Verify the install
 
 ```python
 import pyratatui
-print(pyratatui.__version__)           # e.g. "0.1.0"
-print(pyratatui.__ratatui_version__)   # "0.29"
+print(pyratatui.__version__)           # "0.2.1"
+print(pyratatui.__ratatui_version__)   # "0.30"
 ```
 
 ---
@@ -84,22 +83,44 @@ maturin build --release
 pip install target/wheels/pyratatui-*.whl
 ```
 
-See **[Build Scripts](../build/build_scripts.md)** for CI/CD automation and cross-compilation.
+See **[Build Scripts](../build/build_scripts.md)** for CI/CD and cross-compilation.
 
 ---
 
 ## Develop Install (Editable)
 
-For contributing to pyratatui itself:
-
 ```bash
 git clone https://github.com/pyratatui/pyratatui.git
 cd pyratatui
 pip install maturin
-maturin develop          # debug build — faster compile, slower runtime
+maturin develop          # debug build (fast compile, slower runtime)
 ```
 
-After changing Rust source, re-run `maturin develop` to recompile. Python files in `python/pyratatui/` are picked up immediately without recompilation.
+After changing Rust source, re-run `maturin develop`. Python files under
+`python/pyratatui/` (including `pyratatui.web`) are picked up immediately.
+
+---
+
+## Web TUI — No Extra Dependencies
+
+`pyratatui.web` is pure Python and uses only the standard library:
+
+```python
+from pyratatui.web import WebTerminal, serve
+```
+
+No `pip install` needed beyond `pyratatui` itself.
+
+### Optional: ratzilla WASM app
+
+The companion `pyratatui.ratxilla (pure-Python, no WASM needed)` provides full browser-native rendering via ratzilla.
+Build it with:
+
+```bash
+cargo install --locked trunk
+rustup target add wasm32-unknown-unknown
+./scripts/build_web.sh --release
+```
 
 ---
 
@@ -107,20 +128,19 @@ After changing Rust source, re-run `maturin develop` to recompile. Python files 
 
 ### Windows
 
-Requires a Windows terminal that supports VT sequences (Windows Terminal, VS Code integrated terminal, or Windows 10 build 1903+). The classic `cmd.exe` may not render all Unicode characters correctly.
-
-```powershell
-pip install pyratatui
-python examples/01_hello_world.py
-```
+Requires Windows Terminal or VS Code integrated terminal (Windows 10 build 1903+
+for VT sequence support). The classic `cmd.exe` may not render all Unicode
+characters correctly.
 
 ### macOS
 
-The default macOS Terminal.app works but has limited color support. [iTerm2](https://iterm2.com) or [Alacritty](https://alacritty.org) are recommended for true-color and Unicode support.
+The default Terminal.app works but has limited colour support.
+[iTerm2](https://iterm2.com) or [Alacritty](https://alacritty.org) are
+recommended for true-colour and Unicode.
 
 ### Linux
 
-Any modern terminal emulator works. For true-color RGB (`Color.rgb(r, g, b)`), verify your terminal with:
+Any modern terminal emulator works. Verify true-colour support with:
 
 ```bash
 echo $COLORTERM   # should be "truecolor" or "24bit"
@@ -128,39 +148,24 @@ echo $COLORTERM   # should be "truecolor" or "24bit"
 
 ---
 
-## Verify Your Install
-
-Run the hello-world example directly:
-
-```bash
-python -c "
-from pyratatui import Terminal, Paragraph, Block
-with Terminal() as t:
-    t.draw(lambda f: f.render_widget(
-        Paragraph.from_string('pyratatui installed!').block(Block().bordered()),
-        f.area))
-    t.poll_event(timeout_ms=2000)
-"
-```
-
-You should see a bordered box with the message for 2 seconds.
-
----
-
 ## Troubleshooting
 
 **`ModuleNotFoundError: No module named 'pyratatui._pyratatui'`**
 
-The native extension was not compiled. Run `maturin develop --release` inside the repo, or reinstall via pip.
+The native extension was not compiled. Run `maturin develop --release` inside
+the repo, or reinstall via pip.
 
 **`PanicException: pyratatui::terminal::Terminal is unsendable`**
 
-You called a Terminal method from a thread-pool thread (e.g. via `asyncio.to_thread` or `loop.run_in_executor`). Use `AsyncTerminal` which always calls Terminal on the main event-loop thread. See [Async Updates](../tutorial/async_updates.md).
+You called a Terminal method from a thread-pool thread. Use `AsyncTerminal`
+instead. See [Async Updates](../tutorial/async_updates.md).
 
 **Garbage on screen after Ctrl-C**
 
-The terminal was not restored. Always use `Terminal` as a context manager (`with Terminal() as t:`). For emergency recovery, run `reset` or `stty sane` in your shell.
+Always use `Terminal` as a context manager. For emergency recovery:
+`reset` or `stty sane` in your shell.
 
-**Colors look wrong**
+**`ValueError: Invalid date`**
 
-Ensure your terminal supports the color mode you are using. Use `Color.indexed()` (0–255) for maximum compatibility, or `Color.rgb()` only in true-color terminals.
+`CalendarDate.from_ymd(year, month, day)` raises `ValueError` for invalid dates
+such as February 30. Validate inputs before constructing.

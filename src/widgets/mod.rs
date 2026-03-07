@@ -7,6 +7,7 @@ use pyo3::prelude::*;
 
 mod barchart;
 mod block;
+pub mod calendar;
 mod canvas_widget;
 mod clear;
 mod gauge;
@@ -20,6 +21,7 @@ mod tabs;
 #[allow(unused_imports)]
 pub use barchart::{Bar, BarChart, BarGroup};
 pub use block::Block;
+pub use calendar::Monthly;
 pub use clear::Clear;
 pub use gauge::{Gauge, LineGauge};
 #[allow(unused_imports)]
@@ -44,5 +46,6 @@ pub fn register_widgets(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()>
     scrollbar::register_scrollbar(py, m)?;
     tabs::register_tabs(py, m)?;
     canvas_widget::register_canvas(py, m)?;
+    calendar::register_calendar(py, m)?;
     Ok(())
 }

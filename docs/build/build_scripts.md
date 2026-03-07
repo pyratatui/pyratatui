@@ -210,3 +210,50 @@ buf  = Buffer(Rect(0, 0, 40, 5))
 # (widgets write into buf in tests via ratatui's stateless render)
 print("Build OK")
 ```
+
+---
+
+## Web App (WASM) Build
+
+The `pyratatui.ratxilla` module is pure Python — **no WASM build required**. For reference, the legacy WASM approach was:
+[trunk](https://trunkrs.dev), not Maturin.
+
+### Prerequisites
+
+```bash
+# Install trunk (builds and serves WASM apps)
+cargo install --locked trunk
+
+# Add the wasm32 target
+rustup target add wasm32-unknown-unknown
+```
+
+### Build
+
+```bash
+./scripts/build_web.sh            # debug build
+./scripts/build_web.sh --release  # release (smaller, optimised WASM)
+# Output: pyratatui.ratxilla (pure-Python, no WASM needed)dist/
+```
+
+### Serve the WASM bundle
+
+```bash
+# Quick test
+python -m http.server 8080 --directory pyratatui.ratxilla (pure-Python, no WASM needed)dist/
+# Open http://localhost:8080/
+
+# Or use the pyratatui.web Python server which auto-serves dist/
+python examples/26_web_counter.py
+```
+
+### Directory layout after build
+
+```
+pyratatui.ratxilla (pure-Python, no WASM needed)
+├── dist/
+│   ├── index.html              # bundled page
+├── src/main.rs
+├── Cargo.toml
+└── index.html                  # trunk source template
+```

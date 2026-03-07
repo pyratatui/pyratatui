@@ -19,9 +19,12 @@ use crossterm::{
 
 use ratatui::{backend::CrosstermBackend, Frame as RFrame, Terminal as RTerminal};
 
+use crate::bar_graph::BarGraph as PyBarGraph;
 use crate::effects::{Effect as PyEffect, EffectManager as PyEffectManager};
 use crate::errors::{io_err_to_py, render_err_to_py};
+use crate::image_widget::{ImageState as PyImageState, ImageWidget as PyImageWidget};
 use crate::layout::Rect;
+use crate::logger::{TuiLoggerWidget as PyTuiLoggerWidget, TuiWidgetState as PyTuiWidgetState};
 use crate::popups::{
     render_popup_text, render_stateful_popup_text, Popup as PyPopup, PopupState as PyPopupState,
 };
@@ -29,8 +32,9 @@ use crate::prompts::{PasswordPrompt, TextPrompt, TextState};
 use crate::qrcode::QrCodeWidget as PyQrCodeWidget;
 use crate::scrollview::{ScrollView as PyScrollView, ScrollViewState as PyScrollViewState};
 use crate::textarea::TextArea as PyTextArea;
+use crate::tree_widget::{Tree as PyTree, TreeState as PyTreeState};
 use crate::widgets::{
-    BarChart, Block, Clear, Gauge, LineGauge, List, ListState, Paragraph, Scrollbar,
+    BarChart, Block, Clear, Gauge, LineGauge, List, ListState, Monthly, Paragraph, Scrollbar,
     ScrollbarState, Sparkline, Table, TableState, Tabs,
 };
 
@@ -157,6 +161,8 @@ impl Frame {
         try_widget!(Sparkline, to_ratatui);
         try_widget!(Clear, to_ratatui);
         try_widget!(Tabs, to_ratatui);
+        try_widget!(Monthly, to_ratatui);
+        try_widget!(PyBarGraph, to_ratatui);
 
         if let Ok(w) = widget.extract::<PyRef<List>>() {
             frame.render_widget(w.to_ratatui(), a);
@@ -286,6 +292,64 @@ impl Frame {
     /// Render a `QrCodeWidget` QR code into the given area.
     pub fn render_qrcode(&mut self, qr: &PyQrCodeWidget, area: &Rect) -> PyResult<()> {
         qr.render_raw(self.get(), area.inner)
+    }
+
+    /// Render a `Tree` widget with its mutable `TreeState`.
+    pub fn render_stateful_tree(
+        &mut self,
+        tree: &PyTree,
+        area: &Rect,
+        mut state: PyRefMut<'_, PyTreeState>,
+    ) {
+        use crate::tree_widget::build_ratatui_items;
+        use tui_tree_widget::Tree as RTree;
+
+        // Cache items in state so key_up/key_down work correctly.
+        state.items = tree.items.clone();
+
+        let mut counter = 0usize;
+        let items = build_ratatui_items(&tree.items, &mut counter);
+        let mut rtree = match RTree::new(&items) {
+            Ok(t) => t,
+            Err(_) => return,
+        };
+        if let Some(ref b) = tree.block {
+            rtree = rtree.block(b.to_ratatui());
+        }
+        if let Some(ref s) = tree.highlight_style {
+            rtree = rtree.highlight_style(s.inner);
+        }
+        if let Some(ref sym) = tree.highlight_symbol {
+            rtree = rtree.highlight_symbol(sym.as_str());
+        }
+        self.get()
+            .render_stateful_widget(rtree, area.inner, &mut state.inner);
+    }
+
+    /// Render a `TuiLoggerWidget` with a `TuiWidgetState`.
+    ///
+    /// Note: `TuiLoggerWidget` is a regular Widget (state embedded via builder),
+    /// so we use `render_widget` not `render_stateful_widget`.
+    pub fn render_logger(
+        &mut self,
+        widget: &PyTuiLoggerWidget,
+        area: &Rect,
+        state: PyRef<'_, PyTuiWidgetState>,
+    ) {
+        let rw = widget.to_ratatui(&state.inner);
+        self.get().render_widget(rw, area.inner);
+    }
+
+    /// Render a stateful `ImageWidget` with its mutable `ImageState`.
+    pub fn render_stateful_image(
+        &mut self,
+        _widget: &PyImageWidget,
+        area: &Rect,
+        mut state: PyRefMut<'_, PyImageState>,
+    ) {
+        let img = ratatui_image::StatefulImage::default();
+        self.get()
+            .render_stateful_widget(img, area.inner, &mut state.protocol);
     }
 }
 

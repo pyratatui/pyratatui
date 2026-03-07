@@ -1,14 +1,14 @@
 # Minimal Examples
 
-Ten standalone, copy-paste-ready demos — each under 40 lines, covering every major widget and feature.
+Standalone, copy-paste-ready demos — each under 50 lines, covering every major
+widget and feature. All examples live in the `examples/` directory.
 
 ---
 
 ## 1. Hello World
 
-The absolute minimum: one `Paragraph` in a `Block`, quit on `q`.
-
 ```python
+# examples/01_hello_world.py
 from pyratatui import Terminal, Paragraph, Block, Style, Color
 
 with Terminal() as term:
@@ -30,9 +30,8 @@ with Terminal() as term:
 
 ## 2. Three-Panel Layout
 
-Vertical split: header / body / footer.
-
 ```python
+# examples/02_layout.py
 from pyratatui import (
     Terminal, Layout, Constraint, Direction,
     Paragraph, Block, Style, Color,
@@ -57,16 +56,15 @@ with Terminal() as term:
                 chunks[0],
             )
             frame.render_widget(
-                Paragraph.from_string("Main content area\n\nPress q to quit.")
-                    .block(Block().bordered().title("Body")),
+                Paragraph.from_string("Main content.\n\nPress q to quit.")
+                    .block(Block().bordered().title("Content"))
+                    .wrap(True),
                 chunks[1],
             )
             frame.render_widget(
-                Paragraph.from_string(" q: Quit")
-                    .style(Style().fg(Color.dark_gray())),
+                Paragraph.from_string("  q: Quit"),
                 chunks[2],
             )
-
         term.draw(ui)
         ev = term.poll_event(timeout_ms=100)
         if ev and ev.code == "q":
@@ -75,50 +73,25 @@ with Terminal() as term:
 
 ---
 
-## 3. Styled Text
-
-`Span` → `Line` → `Text` hierarchy with per-span colors and alignment.
+## 3. Styled Text with Spans
 
 ```python
-from pyratatui import (
-    Terminal, Paragraph, Text, Line, Span,
-    Block, Style, Color,
-)
-
-TEXT = Text([
-    Line.from_string("Text Styling Demo").centered(),
-    Line.from_string(""),
-    Line([
-        Span("Foreground: "),
-        Span("red",   Style().fg(Color.red())),
-        Span(", "),
-        Span("green", Style().fg(Color.green())),
-        Span(", "),
-        Span("cyan",  Style().fg(Color.cyan())),
-    ]),
-    Line([
-        Span("Modifiers: "),
-        Span("bold",      Style().bold()),
-        Span(", "),
-        Span("italic",    Style().italic()),
-        Span(", "),
-        Span("underline", Style().underlined()),
-        Span(", "),
-        Span("dim",       Style().dim()),
-    ]),
-    Line([Span("RGB color: "),
-          Span("salmon",  Style().fg(Color.rgb(250, 128, 114))),
-          Span(", "),
-          Span("teal",    Style().fg(Color.rgb(  0, 180, 180)))]),
-    Line.from_string(""),
-    Line.from_string("Press q to quit").right_aligned(),
-])
+# examples/03_styled_text.py
+from pyratatui import Block, Color, Line, Paragraph, Span, Style, Terminal, Text
 
 with Terminal() as term:
     while True:
         def ui(frame):
+            text = Text([
+                Line([
+                    Span("Status: ", Style().bold()),
+                    Span("● Running", Style().fg(Color.green()).bold()),
+                ]),
+                Line([Span("CPU:  "), Span("60%", Style().fg(Color.yellow()))]),
+                Line([Span("MEM:  "), Span("40%", Style().fg(Color.cyan()))]),
+            ])
             frame.render_widget(
-                Paragraph(TEXT).block(Block().bordered().title("Styles")),
+                Paragraph(text).block(Block().bordered().title(" System ")),
                 frame.area,
             )
         term.draw(ui)
@@ -131,319 +104,264 @@ with Terminal() as term:
 
 ## 4. List Navigation
 
-Scrollable list with keyboard navigation.
-
 ```python
-from pyratatui import (
-    Terminal, List, ListItem, ListState,
-    Block, Style, Color, BorderType,
-)
+# examples/04_list_navigation.py
+from pyratatui import Block, Color, List, ListItem, ListState, Style, Terminal
 
-ITEMS = [f"Item {i+1:02d}" for i in range(20)]
-items = [ListItem(t) for t in ITEMS]
+items = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon"]
 state = ListState()
 state.select(0)
 
 with Terminal() as term:
     while True:
         def ui(frame, _state=state):
-            frame.render_stateful_list(
-                List(items)
-                    .block(Block().bordered()
-                           .title(f" List ({_state.selected+1}/{len(items)}) ")
-                           .border_type(BorderType.Rounded))
-                    .highlight_style(Style().fg(Color.black()).bg(Color.cyan()))
-                    .highlight_symbol("▶ "),
-                frame.area,
-                _state,
+            lst = (
+                List([ListItem(i) for i in items])
+                .block(Block().bordered().title(" List "))
+                .highlight_style(Style().fg(Color.black()).bg(Color.cyan()))
+                .highlight_symbol("▶ ")
             )
+            frame.render_stateful_list(lst, frame.area, _state)
         term.draw(ui)
-        ev = term.poll_event(timeout_ms=50)
+        ev = term.poll_event(timeout_ms=100)
         if ev:
-            if ev.code == "q":
-                break
-            elif ev.code == "Down":
-                state.select_next()
-            elif ev.code == "Up":
-                state.select_previous()
-            elif ev.code == "Home":
-                state.select_first()
-            elif ev.code == "End":
-                state.select_last()
+            if ev.code == "q":    break
+            elif ev.code == "Down": state.select_next()
+            elif ev.code == "Up":   state.select_previous()
 ```
 
 ---
 
-## 5. Progress Bar
-
-Animated `Gauge` that fills up automatically.
+## 5. Progress Gauge
 
 ```python
+# examples/05_progress_bar.py
 import time
-from pyratatui import Terminal, Gauge, Block, Style, Color
-
-progress = 0.0
-last = time.monotonic()
+from pyratatui import Block, Gauge, Style, Color, Terminal
 
 with Terminal() as term:
-    term.hide_cursor()
-    while True:
-        now = time.monotonic()
-        progress = min(1.0, progress + (now - last) * 0.2)  # 20% per second
-        last = now
-
-        def ui(frame, p=progress):
-            color = (Color.green() if p < 0.5
-                     else Color.yellow() if p < 0.8
-                     else Color.red())
-            label = "Done! ✓" if p >= 1.0 else f"{p*100:.1f}%"
+    for step in range(101):
+        def ui(frame, s=step):
             frame.render_widget(
                 Gauge()
-                    .ratio(p)
-                    .label(label)
-                    .style(Style().fg(color))
-                    .gauge_style(Style().fg(Color.dark_gray()))
-                    .use_unicode(True)
-                    .block(Block().bordered().title("Download")),
+                .block(Block().bordered().title(" Progress "))
+                .ratio(s / 100)
+                .label(f"{s}%")
+                .gauge_style(Style().fg(Color.green())),
                 frame.area,
             )
         term.draw(ui)
-        ev = term.poll_event(timeout_ms=33)  # ~30 fps
+        ev = term.poll_event(timeout_ms=50)
         if ev and ev.code == "q":
             break
-    term.show_cursor()
+        time.sleep(0.05)
 ```
 
 ---
 
 ## 6. Dynamic Table
 
-Keyboard-navigable table with per-cell styling.
-
 ```python
-from pyratatui import (
-    Terminal, Table, Row, Cell, TableState,
-    Constraint, Block, Style, Color, Paragraph,
-)
+# examples/06_table_dynamic.py
+from pyratatui import Block, Cell, Constraint, Row, Style, Color, Table, TableState, Terminal
 
 DATA = [
-    ("nginx",    32, "Running"),
-    ("postgres", 71, "Running"),
-    ("redis",    5,  "Degraded"),
-    ("kafka",    0,  "Stopped"),
+    ("web-01", "23%", "45%", "Running"),
+    ("db-01",  "67%", "80%", "Running"),
+    ("cache-01", "1%", "12%", "Running"),
 ]
-
-def make_rows():
-    color = lambda c: Color.green() if c < 50 else Color.yellow() if c < 80 else Color.red()
-    st_color = {"Running": Color.green(), "Degraded": Color.yellow(), "Stopped": Color.red()}
-    return [Row([Cell(n), Cell(f"{c}%").style(Style().fg(color(c))),
-                 Cell(s).style(Style().fg(st_color[s]))])
-            for n, c, s in DATA]
-
 state = TableState()
 state.select(0)
 
 with Terminal() as term:
     while True:
         def ui(frame, _state=state):
-            chunks = (Layout().direction(Direction.Vertical)
-                .constraints([Constraint.fill(1), Constraint.length(1)])
-                .split(frame.area))
-            frame.render_stateful_table(
-                Table(make_rows(),
-                      widths=[Constraint.fill(1), Constraint.length(8), Constraint.length(10)],
-                      header=Row.from_strings(["Service","CPU","Status"])
-                              .style(Style().bold().fg(Color.white())))
-                    .block(Block().bordered().title("Services"))
-                    .highlight_style(Style().fg(Color.cyan()).bold())
-                    .highlight_symbol("▶ "),
-                chunks[0], _state)
-            frame.render_widget(
-                Paragraph.from_string(" ↑/↓: Navigate  q: Quit")
-                    .style(Style().fg(Color.dark_gray())), chunks[1])
+            header = Row([Cell(h) for h in ("Server", "CPU", "Mem", "Status")])
+            rows   = [Row([Cell(c) for c in row]) for row in DATA]
+            tbl = (
+                Table(rows)
+                .header(header.style(Style().bold()))
+                .column_widths([
+                    Constraint.fill(1), Constraint.length(6),
+                    Constraint.length(6), Constraint.length(10),
+                ])
+                .block(Block().bordered().title(" Servers "))
+                .highlight_style(Style().fg(Color.black()).bg(Color.cyan()))
+            )
+            frame.render_stateful_table(tbl, frame.area, _state)
+        term.draw(ui)
+        ev = term.poll_event(timeout_ms=100)
+        if ev:
+            if ev.code == "q":    break
+            elif ev.code == "Down": state.select_next()
+            elif ev.code == "Up":   state.select_previous()
+```
+
+---
+
+## 7. Async Reactive
+
+```python
+# examples/07_async_reactive.py
+import asyncio, random
+from pyratatui import AsyncTerminal, Block, Gauge, Paragraph, Style, Color
+
+async def main():
+    cpu = 0
+    async with AsyncTerminal() as term:
+        async for ev in term.events(fps=10, stop_on_quit=True):
+            cpu = max(0, min(100, cpu + random.randint(-5, 10)))
+            def ui(frame, c=cpu):
+                frame.render_widget(
+                    Gauge().block(Block().bordered().title(" CPU "))
+                    .ratio(c / 100).label(f"{c}%")
+                    .gauge_style(Style().fg(Color.green() if c < 70 else Color.red())),
+                    frame.area,
+                )
+            term.draw(ui)
+
+asyncio.run(main())
+```
+
+---
+
+## 8. TachyonFX Fade
+
+```python
+# examples/08_effects_fade.py — see full example in examples/
+```
+
+See `examples/08_effects_fade.py` for the full TachyonFX animation demo.
+
+---
+
+## 9. Effects DSL
+
+See `examples/09_effects_dsl.py` for the `compile_effect` DSL demo.
+
+---
+
+## 10. QR Code Widget
+
+```python
+# examples/17_qrcode.py (simplified)
+from pyratatui import Block, QrCodeWidget, QrColors, Terminal
+
+qr = QrCodeWidget("https://ratatui.rs").colors(QrColors.Inverted)
+
+with Terminal() as term:
+    while True:
+        def ui(frame, _qr=qr):
+            blk   = Block().bordered().title(" Scan Me ")
+            inner = blk.inner(frame.area)
+            frame.render_widget(blk, frame.area)
+            frame.render_qrcode(_qr, inner)
+        term.draw(ui)
+        ev = term.poll_event(timeout_ms=30_000)
+        if ev and ev.code in ("q", "Esc"):
+            break
+```
+
+---
+
+## 25. Calendar Widget *(new in 0.2.1)*
+
+```python
+# examples/25_calendar.py (simplified)
+from pyratatui import (
+    CalendarDate, CalendarEventStore, Monthly,
+    Block, Style, Color, Terminal,
+)
+
+store = CalendarEventStore.today_highlighted(Style().fg(Color.green()).bold())
+cal   = (
+    Monthly(CalendarDate.today(), store)
+    .block(Block().bordered().title(" Calendar "))
+    .show_month_header(Style().bold().fg(Color.cyan()))
+    .show_weekdays_header(Style().italic())
+    .show_surrounding(Style().dim())
+)
+
+with Terminal() as term:
+    while True:
+        term.draw(lambda frame: frame.render_widget(cal, frame.area))
+        ev = term.poll_event(timeout_ms=200)
+        if ev and ev.code == "q":
+            break
+```
+
+Run the full interactive version (month/year navigation):
+
+```bash
+python examples/25_calendar.py
+# ←/→: month   ↑/↓: year   t: today   q: quit
+```
+
+---
+
+## 26. Web Counter *(new in 0.2.1)*
+
+```python
+# examples/26_web_counter.py (simplified)
+from pyratatui.web import WebTerminal
+from pyratatui import Paragraph, Block
+
+counter = 0
+
+def ui(frame):
+    frame.render_widget(
+        Paragraph.from_string(f"Counter: {counter}")
+            .block(Block().bordered().title(" Web TUI ")),
+        frame.area,
+    )
+
+with WebTerminal(cols=100, rows=30) as term:
+    print(f"Open: {term.url}")
+    while True:
         term.draw(ui)
         ev = term.poll_event(timeout_ms=50)
         if ev:
-            if ev.code == "q": break
-            elif ev.code == "Down": state.select_next()
-            elif ev.code == "Up": state.select_previous()
+            if ev.code == "Up":   counter += 1
+            if ev.code == "Down": counter -= 1
+            if ev.code == "q":    break
+```
 
-from pyratatui import Layout  # ensure import for the example above
+Run the full version:
+
+```bash
+python examples/26_web_counter.py
+# → Open: http://localhost:7700/
 ```
 
 ---
 
-## 7. Bar Chart
+## All Examples
 
-`BarChart` with `BarGroup` and styled bars.
-
-```python
-from pyratatui import (
-    Terminal, BarChart, BarGroup, Bar,
-    Block, Style, Color,
-)
-
-MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
-VALUES = [42, 68, 35, 91, 57, 74]
-
-bars = [
-    Bar(v, m).style(Style().fg(Color.cyan() if v < 60 else Color.yellow()))
-    for v, m in zip(VALUES, MONTHS)
-]
-
-with Terminal() as term:
-    while True:
-        def ui(frame):
-            frame.render_widget(
-                BarChart()
-                    .data(BarGroup(bars, label="CPU %"))
-                    .bar_width(5)
-                    .bar_gap(1)
-                    .max(100)
-                    .value_style(Style().fg(Color.white()).bold())
-                    .label_style(Style().fg(Color.dark_gray()))
-                    .block(Block().bordered().title("Monthly CPU Usage")),
-                frame.area,
-            )
-        term.draw(ui)
-        ev = term.poll_event(timeout_ms=100)
-        if ev and ev.code == "q":
-            break
-```
-
----
-
-## 8. Sparkline History
-
-Sparkline showing a live rolling window of values.
-
-```python
-import math, time
-from pyratatui import Terminal, Sparkline, Block, Style, Color
-
-history = [0] * 40
-
-with Terminal() as term:
-    start = time.monotonic()
-    while True:
-        t = time.monotonic() - start
-        new_val = int(50 + 45 * math.sin(t * 1.5))
-        history.append(new_val)
-        history = history[-40:]
-
-        def ui(frame, h=list(history)):
-            frame.render_widget(
-                Sparkline()
-                    .data(h)
-                    .max(100)
-                    .style(Style().fg(Color.green()))
-                    .block(Block().bordered().title(
-                        f" CPU History  current={h[-1]}%")),
-                frame.area,
-            )
-        term.draw(ui)
-        ev = term.poll_event(timeout_ms=100)
-        if ev and ev.code == "q":
-            break
-```
-
----
-
-## 9. Tabs Navigation
-
-Multi-tab UI with keyboard switching.
-
-```python
-from pyratatui import (
-    Terminal, Tabs, Layout, Constraint, Direction,
-    Paragraph, Block, Style, Color,
-)
-
-TABS = ["Overview", "Services", "Logs"]
-current = 0
-
-CONTENT = [
-    "Overview tab: system metrics and health indicators.",
-    "Services tab: list of all running microservices.",
-    "Logs tab: recent log entries from all services.",
-]
-
-with Terminal() as term:
-    while True:
-        tab = current
-        def ui(frame, _tab=tab):
-            chunks = (
-                Layout()
-                .direction(Direction.Vertical)
-                .constraints([Constraint.length(3), Constraint.fill(1)])
-                .split(frame.area)
-            )
-            frame.render_widget(
-                Tabs(TABS)
-                    .select(_tab)
-                    .block(Block().bordered())
-                    .highlight_style(Style().fg(Color.cyan()).bold())
-                    .style(Style().fg(Color.dark_gray())),
-                chunks[0],
-            )
-            frame.render_widget(
-                Paragraph.from_string(CONTENT[_tab])
-                    .block(Block().bordered().title(TABS[_tab])),
-                chunks[1],
-            )
-        term.draw(ui)
-        ev = term.poll_event(timeout_ms=100)
-        if ev:
-            if ev.code == "q":
-                break
-            elif ev.code == "Tab":
-                current = (current + 1) % len(TABS)
-            elif ev.code == "BackTab":
-                current = (current - 1) % len(TABS)
-```
-
----
-
-## 10. TachyonFX Fade Demo
-
-Fade-in animation on startup, then continuous fade cycle.
-
-```python
-import time
-from pyratatui import (
-    Terminal, Paragraph, Block, Style, Color,
-    Effect, EffectManager, Interpolation,
-)
-
-mgr  = EffectManager()
-mgr.add(Effect.fade_from_fg(Color.black(), 1500, Interpolation.SineOut))
-last = time.monotonic()
-
-with Terminal() as term:
-    term.hide_cursor()
-    while True:
-        now = time.monotonic()
-        ms  = int((now - last) * 1000)
-        last = now
-
-        def ui(frame, _mgr=mgr, _ms=ms):
-            area = frame.area
-            # 1. Render widget
-            frame.render_widget(
-                Paragraph.from_string(
-                    "TachyonFX Fade Demo\n\n"
-                    "Text fades in on startup.\n\n"
-                    "Press q to quit."
-                ).block(Block().bordered().title(" Effects "))
-                 .style(Style().fg(Color.white())),
-                area,
-            )
-            # 2. Apply effect (after rendering)
-            frame.apply_effect_manager(_mgr, _ms, area)
-
-        term.draw(ui)
-        ev = term.poll_event(timeout_ms=16)
-        if ev and ev.code == "q":
-            break
-    term.show_cursor()
-```
+| # | File | Demonstrates |
+|---|------|--------------|
+| 01 | `01_hello_world.py` | Paragraph, Block, Style |
+| 02 | `02_layout.py` | Layout, Constraint, Direction |
+| 03 | `03_styled_text.py` | Span, Line, Text, Modifier |
+| 04 | `04_list_navigation.py` | List, ListState |
+| 05 | `05_progress_bar.py` | Gauge, LineGauge |
+| 06 | `06_table_dynamic.py` | Table, TableState |
+| 07 | `07_async_reactive.py` | AsyncTerminal, asyncio |
+| 08 | `08_effects_fade.py` | EffectManager, TachyonFX |
+| 09 | `09_effects_dsl.py` | compile_effect DSL |
+| 10 | `10_full_app.py` | Multi-tab full app |
+| 11 | `11_popup_basic.py` | Popup (stateless) |
+| 12 | `12_popup_stateful.py` | PopupState (draggable) |
+| 13 | `13_popup_scrollable.py` | Scrollable popup |
+| 14 | `14_textarea_basic.py` | TextArea, Emacs bindings |
+| 15 | `15_textarea_advanced.py` | TextArea, Vim modal |
+| 16 | `16_scrollview.py` | ScrollView |
+| 17 | `17_qrcode.py` | QrCodeWidget |
+| 18 | `18_async_progress.py` | AsyncTerminal + progress |
+| 19 | `19_effects_glitch.py` | Glitch effects |
+| 20 | `20_effects_matrix.py` | Matrix rain effect |
+| 21 | `21_prompt_confirm.py` | PasswordPrompt |
+| 22 | `22_prompt_select.py` | Select prompt |
+| 23 | `23_prompt_text.py` | TextPrompt |
+| 24 | `24_dashboard.py` | Full monitoring dashboard |
+| **25** | **`25_calendar.py`** | **Monthly calendar widget** |
+| **26** | **`26_web_counter.py`** | **pyratatui.web browser TUI** |

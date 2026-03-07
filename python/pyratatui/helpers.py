@@ -1,13 +1,29 @@
 """
 helpers.py — High-level convenience helpers for common TUI patterns.
 
-These allow a dead-simple entry point similar to ratatui's `ratatui::run()`.
+Exports
+-------
+Pure-Python helpers
+  run_app          — synchronous application loop
+  run_app_async    — async application loop
+
+Re-exports from the native _pyratatui extension
+  compile_effect   — compile a tachyonfx DSL string into an Effect
+  prompt_text      — blocking single-line text prompt
+  prompt_password  — blocking password prompt (input masked as *)
+
+These three names live in the Rust extension module but __init__.py
+imports them from here, so we re-export them to satisfy that contract.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
 
+# Re-export Rust functions that __init__.py expects to find in this module.
+from ._pyratatui import compile_effect  # noqa: F401  (tachyonfx DSL compiler)
+from ._pyratatui import prompt_password  # noqa: F401  (blocking password prompt)
+from ._pyratatui import prompt_text  # noqa: F401  (blocking text prompt)
 from ._pyratatui import Frame, Terminal
 from .async_terminal import AsyncTerminal
 
@@ -22,19 +38,19 @@ def run_app(
     Run a simple synchronous TUI application.
 
     Args:
-        ui_fn:  A callable that receives `Frame` and renders the UI each tick.
+        ui_fn:  A callable that receives ``Frame`` and renders the UI each tick.
         fps:    Target frames per second.
-        on_key: Optional callback receiving a `KeyEvent`. Return `True` to quit.
-                If not supplied, pressing 'q' or Ctrl-C exits automatically.
+        on_key: Optional callback receiving a ``KeyEvent``. Return ``True`` to
+                quit. If not supplied, pressing ``q`` or Ctrl-C exits.
 
     Example::
 
-        from pyratatui import run_app, Paragraph, Text
+        from pyratatui import run_app, Paragraph
 
         def ui(frame):
             frame.render_widget(
                 Paragraph.from_string("Hello! Press q to quit."),
-                frame.area
+                frame.area,
             )
 
         run_app(ui)
@@ -64,9 +80,10 @@ async def run_app_async(
     Run a simple async TUI application.
 
     Args:
-        ui_fn:  A callable that receives `Frame` and renders the UI each tick.
+        ui_fn:  A callable that receives ``Frame`` and renders the UI each tick.
         fps:    Target frames per second.
-        on_key: Optional callback receiving a `KeyEvent`. Return `True` to quit.
+        on_key: Optional callback receiving a ``KeyEvent``. Return ``True`` to
+                quit. If not supplied, pressing ``q`` or Ctrl-C exits.
 
     Example::
 
@@ -78,11 +95,8 @@ async def run_app_async(
             def ui(frame):
                 frame.render_widget(
                     Paragraph.from_string(f"Async tick: {tick}"),
-                    frame.area
+                    frame.area,
                 )
-
-            async def on_key_handler(ev):
-                return ev.code == "q"
 
             await run_app_async(ui, on_key=lambda ev: ev.code == "q")
 

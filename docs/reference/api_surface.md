@@ -1,9 +1,11 @@
 # API Surface — Full Parity Map
 
-This document maps every Rust API exposed to Python, its Python binding,
-its type stub, documentation location, and example file.
+This document maps every Python-exposed Rust API to its Python binding,
+type stub, documentation page, and example file.
 
-> **Source of truth**: Rust implementation. Python always mirrors Rust.
+> **Source of truth:** Rust implementation in `src/`. Python always mirrors Rust.
+
+---
 
 ## Core Types
 
@@ -21,6 +23,8 @@ its type stub, documentation location, and example file.
 | `Alignment` | `Alignment` | ✅ | `layout.md` | `02_layout.py` |
 | `Layout` | `Layout` | ✅ | `layout.md` | `02_layout.py` |
 | `Buffer` | `Buffer` | ✅ | `buffer.md` | — |
+
+---
 
 ## Widgets
 
@@ -48,6 +52,11 @@ its type stub, documentation location, and example file.
 | `ScrollbarState` | `ScrollbarState` | ✅ | `widgets.md` | `10_full_app.py` |
 | `ScrollbarOrientation` | `ScrollbarOrientation` | ✅ | `widgets.md` | `10_full_app.py` |
 | `Tabs` | `Tabs` | ✅ | `widgets.md` | `10_full_app.py` |
+| `Monthly` *(calendar)* | `Monthly` | ✅ | `calendar.md` | `25_calendar.py` |
+| `CalendarDate` *(time::Date)* | `CalendarDate` | ✅ | `calendar.md` | `25_calendar.py` |
+| `CalendarEventStore` | `CalendarEventStore` | ✅ | `calendar.md` | `25_calendar.py` |
+
+---
 
 ## Terminal & Frame
 
@@ -57,6 +66,27 @@ its type stub, documentation location, and example file.
 | `Frame` | `Frame` | ✅ | `terminal.md` | `01_hello_world.py` |
 | `PyKeyEvent` | `KeyEvent` | ✅ | `terminal.md` | `04_list_navigation.py` |
 | `CrosstermBackend` | `CrosstermBackend` | ✅ | `terminal.md` | — |
+| *(Python)* `AsyncTerminal` | `AsyncTerminal` | ✅ | `terminal.md` | `07_async_reactive.py` |
+
+### Frame render methods
+
+| Method | Widget type | Stateful |
+|---|---|---|
+| `render_widget(w, area)` | All standard widgets + `Monthly` | — |
+| `render_stateful_list(w, area, state)` | `List` | `ListState` |
+| `render_stateful_table(w, area, state)` | `Table` | `TableState` |
+| `render_stateful_scrollbar(w, area, state)` | `Scrollbar` | `ScrollbarState` |
+| `render_popup(popup, area)` | `Popup` | — |
+| `render_stateful_popup(popup, area, state)` | `Popup` | `PopupState` |
+| `render_textarea(ta, area)` | `TextArea` | *(internal)* |
+| `render_stateful_scrollview(sv, area, state)` | `ScrollView` | `ScrollViewState` |
+| `render_qrcode(qr, area)` | `QrCodeWidget` | — |
+| `apply_effect(effect, ms, area)` | `Effect` | — |
+| `apply_effect_manager(mgr, ms, area)` | `EffectManager` | — |
+| `render_text_prompt(prompt, area, state)` | `TextPrompt` | `TextState` |
+| `render_password_prompt(prompt, area, state)` | `PasswordPrompt` | `TextState` |
+
+---
 
 ## Effects (TachyonFX)
 
@@ -70,17 +100,21 @@ its type stub, documentation location, and example file.
 | `CellFilter` | `CellFilter` | ✅ | `effects.md` | `09_effects_dsl.py` |
 | `compile_effect` | `compile_effect` | ✅ | `effects.md` | `09_effects_dsl.py` |
 
+---
+
 ## Prompts
 
 | Rust API | Python Name | Stub | Doc | Example |
 |---|---|---|---|---|
 | `TextPrompt` | `TextPrompt` | ✅ | `prompts.md` | `23_prompt_text.py` |
-| `PasswordPrompt` | `PasswordPrompt` | ✅ | `prompts.md` | `23_prompt_text.py` |
+| `PasswordPrompt` | `PasswordPrompt` | ✅ | `prompts.md` | `21_prompt_confirm.py` |
 | `TextState` | `TextState` | ✅ | `prompts.md` | `23_prompt_text.py` |
 | `TextRenderStyle` | `TextRenderStyle` | ✅ | `prompts.md` | `23_prompt_text.py` |
-| `PromptStatus` | `PromptStatus` | ✅ | `prompts.md` | `21_prompt_confirm.py` |
-| `prompt_text` | `prompt_text` | ✅ | `prompts.md` | `23_prompt_text.py` |
-| `prompt_password` | `prompt_password` | ✅ | `prompts.md` | `23_prompt_text.py` |
+| `PromptStatus` | `PromptStatus` | ✅ | `prompts.md` | `23_prompt_text.py` |
+| `prompt_text` | `prompt_text` | ✅ | `prompts.md` | — |
+| `prompt_password` | `prompt_password` | ✅ | `prompts.md` | — |
+
+---
 
 ## Popups
 
@@ -90,6 +124,8 @@ its type stub, documentation location, and example file.
 | `PopupState` | `PopupState` | ✅ | `popups.md` | `12_popup_stateful.py` |
 | `KnownSizeWrapper` | `KnownSizeWrapper` | ✅ | `popups.md` | `13_popup_scrollable.py` |
 
+---
+
 ## TextArea
 
 | Rust API | Python Name | Stub | Doc | Example |
@@ -98,12 +134,16 @@ its type stub, documentation location, and example file.
 | `CursorMove` | `CursorMove` | ✅ | `textarea.md` | `15_textarea_advanced.py` |
 | `Scrolling` | `Scrolling` | ✅ | `textarea.md` | `15_textarea_advanced.py` |
 
+---
+
 ## ScrollView
 
 | Rust API | Python Name | Stub | Doc | Example |
 |---|---|---|---|---|
 | `ScrollView` | `ScrollView` | ✅ | `scrollview.md` | `16_scrollview.py` |
 | `ScrollViewState` | `ScrollViewState` | ✅ | `scrollview.md` | `16_scrollview.py` |
+
+---
 
 ## QR Code
 
@@ -112,10 +152,32 @@ its type stub, documentation location, and example file.
 | `QrCodeWidget` | `QrCodeWidget` | ✅ | `qrcode.md` | `17_qrcode.py` |
 | `QrColors` | `QrColors` | ✅ | `qrcode.md` | `17_qrcode.py` |
 
-## Python-only helpers
+---
 
-| Python API | Type | Doc | Example |
+## Calendar *(new in 0.2.1)*
+
+| Rust API | Python Name | Stub | Doc | Example |
+|---|---|---|---|---|
+| `time::Date` (wrapped) | `CalendarDate` | ✅ | `calendar.md` | `25_calendar.py` |
+| `CalendarEventStore` | `CalendarEventStore` | ✅ | `calendar.md` | `25_calendar.py` |
+| `Monthly` | `Monthly` | ✅ | `calendar.md` | `25_calendar.py` |
+
+---
+
+## Web TUI *(new in 0.2.1)*
+
+| Python API | Module | Doc | Example |
 |---|---|---|---|
-| `AsyncTerminal` | class | `terminal.md` | `07_async_reactive.py` |
-| `run_app` | function | `terminal.md` | `10_full_app.py` |
-| `run_app_async` | function | `terminal.md` | `07_async_reactive.py` |
+| `WebTerminal` | `pyratatui.web` | `web.md` | `26_web_counter.py` |
+| `WebKeyEvent` | `pyratatui.web` | `web.md` | `26_web_counter.py` |
+| `serve()` | `pyratatui.web` | `web.md` | `26_web_counter.py` |
+
+---
+
+## Python-only Helpers
+
+| Name | Module | Doc |
+|---|---|---|
+| `AsyncTerminal` | `pyratatui.async_terminal` | `terminal.md` |
+| `run_app(ui_fn, fps, on_key)` | `pyratatui.helpers` | `terminal.md` |
+| `run_app_async(ui_fn, fps, on_key)` | `pyratatui.helpers` | `terminal.md` |

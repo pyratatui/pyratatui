@@ -1088,3 +1088,297 @@ class QrCodeWidget:
 # NOTE: Addition to Frame class:
 # class Frame (additions):
 #     def render_qrcode(self, qr: QrCodeWidget, area: Rect) -> None: ...
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Calendar  (ratatui widget-calendar integration)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class CalendarDate:
+    """A calendar date (year, month 1-12, day).
+
+    Example::
+
+        from pyratatui import CalendarDate
+        today = CalendarDate.today()
+        d     = CalendarDate.from_ymd(2024, 3, 15)
+    """
+
+    @staticmethod
+    def from_ymd(year: int, month: int, day: int) -> CalendarDate:
+        """Construct from year, month (1-12), and day. Raises ValueError for invalid dates."""
+        ...
+
+    @staticmethod
+    def today() -> CalendarDate:
+        """Return today's UTC date."""
+        ...
+
+    @property
+    def year(self) -> int: ...
+    @property
+    def month(self) -> int: ...
+    @property
+    def day(self) -> int: ...
+    def __repr__(self) -> str: ...
+    def __str__(self) -> str: ...
+    def __eq__(self, other: object) -> bool: ...
+    def __hash__(self) -> int: ...
+
+class CalendarEventStore:
+    """Event store for the calendar widget: maps dates to display styles.
+
+    Example::
+
+        from pyratatui import CalendarDate, CalendarEventStore, Style, Color
+
+        store = CalendarEventStore()
+        store.add(CalendarDate.from_ymd(2024, 3, 15), Style().fg(Color.red()).bold())
+        store.add_today(Style().fg(Color.green()).bold())
+    """
+
+    def __init__(self) -> None: ...
+    def add(self, date: CalendarDate, style: Style) -> None:
+        """Mark *date* with *style* in the event store."""
+        ...
+
+    def add_today(self, style: Style) -> None:
+        """Highlight today's date with *style*."""
+        ...
+
+    @staticmethod
+    def today_highlighted(style: Style) -> CalendarEventStore:
+        """Return a new store with today already highlighted."""
+        ...
+
+    def __repr__(self) -> str: ...
+
+class Monthly:
+    """Monthly calendar widget.
+
+    Displays a full month calendar with optional event styling, surrounding
+    days, weekday headers, and a month/year title.
+
+    Example::
+
+        from pyratatui import CalendarDate, CalendarEventStore, Monthly, Style, Color
+
+        store = CalendarEventStore.today_highlighted(Style().fg(Color.green()).bold())
+        cal   = (Monthly(CalendarDate.today(), store)
+                    .show_month_header(Style().bold())
+                    .show_weekdays_header(Style().italic())
+                    .show_surrounding(Style().dim()))
+        # frame.render_widget(cal, area)
+    """
+
+    def __init__(
+        self, display_date: CalendarDate, events: CalendarEventStore
+    ) -> None: ...
+    def block(self, block: Block) -> Monthly:
+        """Wrap in a ``Block``."""
+        ...
+
+    def default_style(self, style: Style) -> Monthly:
+        """Style applied to all unstyled days."""
+        ...
+
+    def show_surrounding(self, style: Style) -> Monthly:
+        """Show days from adjacent months in *style*."""
+        ...
+
+    def show_month_header(self, style: Style) -> Monthly:
+        """Show the month/year header line in *style*."""
+        ...
+
+    def show_weekdays_header(self, style: Style) -> Monthly:
+        """Show the weekday abbreviation header in *style*."""
+        ...
+
+    def __repr__(self) -> str: ...
+
+# ── BarGraph (tui-bar-graph) ──────────────────────────────────────────────────
+
+class BarGraphStyle:
+    """Bar rendering style.
+
+    Use as class attributes: ``BarGraphStyle.Braille``, etc.
+    """
+
+    Braille: BarGraphStyle
+    HalfBlock: BarGraphStyle
+    Block: BarGraphStyle
+    Quadrant: BarGraphStyle
+    Octant: BarGraphStyle
+    def __repr__(self) -> str: ...
+
+class BarColorMode:
+    """Bar colour mode.
+
+    Use as class attributes: ``BarColorMode.VerticalGradient``, etc.
+    """
+
+    VerticalGradient: BarColorMode
+    HorizontalGradient: BarColorMode
+    Bar: BarColorMode
+    def __repr__(self) -> str: ...
+
+class BarGraph:
+    """Colourful bar graph widget.
+
+    Example::
+
+        from pyratatui import BarGraph, BarGraphStyle, BarColorMode
+
+        graph = (
+            BarGraph([0.1, 0.5, 0.9])
+            .bar_style(BarGraphStyle.Braille)
+            .color_mode(BarColorMode.VerticalGradient)
+            .gradient("turbo")
+        )
+        frame.render_widget(graph, area)
+    """
+
+    def __init__(self, data: list[float]) -> None: ...
+    @property
+    def len(self) -> int: ...
+    def bar_style(self, style: BarGraphStyle) -> BarGraph: ...
+    def color_mode(self, mode: BarColorMode) -> BarGraph: ...
+    def gradient(self, name: str) -> BarGraph: ...
+    def data(self, values: list[float]) -> BarGraph: ...
+    def __repr__(self) -> str: ...
+
+# ── TreeWidget (tui-tree-widget) ───────────────────────────────────────────────
+
+class TreeItem:
+    """A node in a tree widget.
+
+    Example::
+
+        root = TreeItem("Root", [TreeItem("Child 1"), TreeItem("Child 2")])
+    """
+
+    def __init__(self, text: str, children: list[TreeItem] | None = None) -> None: ...
+    @property
+    def text(self) -> str: ...
+    @property
+    def children(self) -> list[TreeItem]: ...
+    def with_child(self, child: TreeItem) -> TreeItem: ...
+    def __repr__(self) -> str: ...
+
+class Tree:
+    """Tree-view widget.
+
+    Example::
+
+        tree = Tree(items).block(Block().bordered().title(" Files "))
+        frame.render_stateful_tree(tree, area, state)
+    """
+
+    def __init__(self, items: list[TreeItem]) -> None: ...
+    @property
+    def len(self) -> int: ...
+    def block(self, block: Block) -> Tree: ...
+    def highlight_style(self, style: Style) -> Tree: ...
+    def highlight_symbol(self, sym: str) -> Tree: ...
+    def __repr__(self) -> str: ...
+
+class TreeState:
+    """Navigation state for a tree widget."""
+
+    def __init__(self) -> None: ...
+    def set_items(self, items: list[TreeItem]) -> None: ...
+    @property
+    def selected(self) -> list[int] | None: ...
+    def select(self, path: list[int]) -> None: ...
+    def open(self, path: list[int]) -> bool: ...
+    def close(self, path: list[int]) -> bool: ...
+    def toggle(self, path: list[int]) -> bool: ...
+    def toggle_selected(self) -> bool: ...
+    def key_up(self) -> bool: ...
+    def key_down(self) -> bool: ...
+    def key_left(self) -> bool: ...
+    def key_right(self) -> bool: ...
+    def __repr__(self) -> str: ...
+
+# ── Markdown (tui-markdown) ────────────────────────────────────────────────────
+
+def markdown_to_text(src: str) -> Text:
+    """Convert a Markdown string to a ``Text`` object for rendering.
+
+    Example::
+
+        text = markdown_to_text("# Hello\\n\\n**bold** _italic_")
+        frame.render_widget(Paragraph(text), area)
+    """
+    ...
+
+# ── Logger (tui-logger) ────────────────────────────────────────────────────────
+
+def init_logger(level: str = "info") -> None:
+    """Initialise the tui-logger backend.
+
+    Valid levels: ``"error"``, ``"warn"``, ``"info"``, ``"debug"``, ``"trace"``.
+    """
+    ...
+
+def log_message(level: str, message: str) -> None:
+    """Emit a log message at the given level."""
+    ...
+
+class TuiWidgetState:
+    """Filter/navigation state for ``TuiLoggerWidget``."""
+
+    def __init__(self) -> None: ...
+    def transition(self, key: str) -> None: ...
+    def __repr__(self) -> str: ...
+
+class TuiLoggerWidget:
+    """Scrolling log-viewer widget.
+
+    Example::
+
+        logger = TuiLoggerWidget().block(Block().bordered())
+        state = TuiWidgetState()
+        frame.render_logger(logger, area, state)
+    """
+
+    def __init__(self) -> None: ...
+    def block(self, block: Block) -> TuiLoggerWidget: ...
+    def style(self, style: Style) -> TuiLoggerWidget: ...
+    def error_style(self, style: Style) -> TuiLoggerWidget: ...
+    def warn_style(self, style: Style) -> TuiLoggerWidget: ...
+    def info_style(self, style: Style) -> TuiLoggerWidget: ...
+    def debug_style(self, style: Style) -> TuiLoggerWidget: ...
+    def trace_style(self, style: Style) -> TuiLoggerWidget: ...
+    def __repr__(self) -> str: ...
+
+# ── Image (ratatui-image) ──────────────────────────────────────────────────────
+
+class ImageState:
+    """Mutable render state for a loaded image."""
+
+    @property
+    def path(self) -> str: ...
+    def __repr__(self) -> str: ...
+
+class ImagePicker:
+    """Detects terminal graphics capabilities and creates image protocols.
+
+    Example::
+
+        picker = ImagePicker.halfblocks()
+        state  = picker.load("photo.png")
+        frame.render_stateful_image(ImageWidget(), area, state)
+    """
+
+    @staticmethod
+    def halfblocks() -> ImagePicker: ...
+    @staticmethod
+    def with_font_size(width_px: int, height_px: int) -> ImagePicker: ...
+    def load(self, path: str) -> ImageState: ...
+    def __repr__(self) -> str: ...
+
+class ImageWidget:
+    """Resizing stateful image widget."""
+
+    def __init__(self) -> None: ...
+    def __repr__(self) -> str: ...

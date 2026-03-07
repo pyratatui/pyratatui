@@ -165,7 +165,7 @@ def render_services(frame, area, services, list_state, table_state):
         Cell(s["uptime"]),
     ]) for s in services]
     frame.render_stateful_table(
-        Table(rows, [Constraint.fill(1)] * 5, header=hdr)
+        Table(rows).column_widths([Constraint.fill(1)] * 5).header(hdr)
             .block(Block().bordered().title("Process Table")
                    .border_type(BorderType.Rounded))
             .highlight_style(Style().fg(Color.cyan()).bold()),
@@ -481,4 +481,183 @@ with Terminal() as term:
 
     term.show_cursor()
     print("Startup complete — entering main app.")
+```
+
+---
+
+## 25. Calendar — Interactive Month Browser *(new in 0.2.1)*
+
+A fully interactive monthly calendar with event highlighting, weekend styling,
+and keyboard navigation.
+
+```python
+"""
+examples/25_calendar.py
+
+Controls:
+  ←/→  Previous / next month
+  ↑/↓  Previous / next year
+  t    Jump to today
+  q    Quit
+"""
+from __future__ import annotations
+import calendar as _cal
+from datetime import date as _pydate
+from pyratatui import (
+    Block, CalendarDate, CalendarEventStore, Color, Constraint,
+    Direction, Layout, Line, Monthly, Paragraph, Span, Style, Terminal, Text,
+)
+
+_today = _pydate.today()
+_year  = _today.year
+_month = _today.month
+
+_MONTHS = ["", "January","February","March","April","May","June",
+           "July","August","September","October","November","December"]
+
+def make_store(year, month):
+    store = CalendarEventStore()
+    if year == _today.year and month == _today.month:
+        store.add_today(Style().fg(Color.green()).bold())
+    _, days = _cal.monthrange(year, month)
+    for day in range(1, days + 1):
+        if _cal.weekday(year, month, day) >= 5:
+            store.add(CalendarDate.from_ymd(year, month, day),
+                      Style().fg(Color.yellow()).dim())
+    store.add(CalendarDate.from_ymd(year, month, 1),
+              Style().fg(Color.cyan()).bold())
+    if days >= 15:
+        store.add(CalendarDate.from_ymd(year, month, 15),
+                  Style().fg(Color.magenta()).bold())
+    return store
+
+def ui(frame):
+    outer = (Layout().direction(Direction.Vertical)
+             .constraints([Constraint.length(3), Constraint.min(1), Constraint.length(3)])
+             .split(frame.area))
+    frame.render_widget(
+        Paragraph.from_string(f"  {_MONTHS[_month]}  {_year}")
+        .block(Block().bordered().title(" Calendar "))
+        .centered().style(Style().fg(Color.cyan()).bold()), outer[0])
+    body = (Layout().direction(Direction.Horizontal)
+            .constraints([Constraint.length(30), Constraint.fill(1)])
+            .split(outer[1]))
+    frame.render_widget(
+        Monthly(CalendarDate.from_ymd(_year, _month, 1), make_store(_year, _month))
+        .block(Block().bordered().title(" Monthly "))
+        .show_month_header(Style().bold().fg(Color.cyan()))
+        .show_weekdays_header(Style().italic().fg(Color.light_blue()))
+        .show_surrounding(Style().dim())
+        .default_style(Style().fg(Color.white())), body[0])
+    legend = Text([
+        Line([Span("Legend:", Style().bold())]), Line([]),
+        Line([Span("  today",       Style().fg(Color.green()).bold())]),
+        Line([Span("  weekend",     Style().fg(Color.yellow()).dim())]),
+        Line([Span("  1st",         Style().fg(Color.cyan()).bold())]),
+        Line([Span("  15th",        Style().fg(Color.magenta()).bold())]),
+        Line([]), Line([Span(f"Today: {_today}", Style().dim())]),
+    ])
+    frame.render_widget(
+        Paragraph(legend).block(Block().bordered().title(" Legend ")), body[1])
+    frame.render_widget(
+        Paragraph.from_string("  ←/→ month   ↑/↓ year   t today   q quit")
+        .block(Block().bordered()).style(Style().fg(Color.dark_gray())), outer[2])
+
+def main():
+    global _year, _month
+    with Terminal() as term:
+        while True:
+            term.draw(ui)
+            ev = term.poll_event(timeout_ms=200)
+            if not ev: continue
+            if ev.code == "q":     break
+            elif ev.code == "Left":
+                _month -= 1
+                if _month < 1: _month = 12; _year -= 1
+            elif ev.code == "Right":
+                _month += 1
+                if _month > 12: _month = 1; _year += 1
+            elif ev.code == "Up":   _year += 1
+            elif ev.code == "Down": _year -= 1
+            elif ev.code == "t":    _year = _today.year; _month = _today.month
+
+main()
+```
+
+Run it:
+
+```bash
+python examples/25_calendar.py
+```
+
+---
+
+## 26. Web Counter — Browser TUI *(new in 0.2.1)*
+
+An interactive counter that runs entirely in your browser via `pyratatui.web`.
+
+```python
+"""
+examples/26_web_counter.py
+
+Open http://localhost:7700/ in your browser after starting.
+↑/↓: change counter   r: reset   f: fill   q: quit
+"""
+from pyratatui import Block, Color, Constraint, Direction, Gauge, Layout, Line, Paragraph, Span, Style, Text
+from pyratatui.web import WebTerminal
+
+counter = 0
+MAX, MIN = 100, 0
+status  = "Ready — ↑/↓ to change, r reset, f fill, q quit"
+
+def ui(frame):
+    area = frame.area
+    outer = (Layout().direction(Direction.Vertical)
+             .constraints([
+                 Constraint.length(3), Constraint.length(4),
+                 Constraint.length(3), Constraint.min(1), Constraint.length(3),
+             ]).split(area))
+    frame.render_widget(
+        Paragraph.from_string("  PyRatatui Web — Interactive Counter")
+        .block(Block().bordered().title(" pyratatui.web "))
+        .style(Style().fg(Color.cyan()).bold()), outer[0])
+    c_color = Color.green() if counter >= 50 else Color.yellow() if counter >= 20 else Color.red()
+    frame.render_widget(
+        Paragraph(Text([Line([
+            Span("  Counter: "),
+            Span(f"{counter:>4}", Style().fg(c_color).bold()),
+            Span(f" / {MAX}", Style().dim()),
+        ]), Line([])]))
+        .block(Block().bordered().title(" Value ")), outer[1])
+    frame.render_widget(
+        Gauge().block(Block().bordered().title(" Progress "))
+        .ratio(max(0.0, min(1.0, counter / MAX)))
+        .label(f"{counter}%")
+        .gauge_style(Style().fg(c_color)), outer[2])
+    frame.render_widget(
+        Paragraph.from_string(f"  {status}")
+        .block(Block().bordered()).style(Style().fg(Color.dark_gray())), outer[4])
+
+def main():
+    global counter, status
+    with WebTerminal(cols=100, rows=32, fps=20) as term:
+        print(f"\n  Open: {term.url}\n")
+        while True:
+            term.draw(ui)
+            ev = term.poll_event(timeout_ms=50)
+            if not ev: continue
+            if ev.code == "q":     break
+            elif ev.code == "Up":  counter = min(MAX, counter + 1); status = f"Counter: {counter}"
+            elif ev.code == "Down":counter = max(MIN, counter - 1); status = f"Counter: {counter}"
+            elif ev.code == "r":   counter = 0; status = "Reset"
+            elif ev.code == "f":   counter = MAX; status = f"Filled to {MAX}"
+
+main()
+```
+
+Run it:
+
+```bash
+python examples/26_web_counter.py
+# Open http://localhost:7700/ in your browser
 ```
