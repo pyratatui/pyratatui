@@ -796,7 +796,8 @@ Creates a ready-to-run project:
 ```
 my_tui_app/
 ├── main.py           # runnable hello world starter
-├── requirements.txt  # pyratatui dependency
+├── pyproject.toml    # app metdata
+├── .gitignore        # skip unnecessary files from commit
 └── README.md         # project docs
 ```
 
