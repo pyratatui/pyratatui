@@ -4,6 +4,8 @@
 
 **Professional Python bindings for [ratatui](https://ratatui.rs) 0.30 — powered by Rust & PyO3**
 
+[![IdeaCred](https://ideacred.com/api/badge/pyratatui/pyratatui?style=for-the-badge)](https://ideacred.com/profile/pyratatui)
+
 [![PyPI](https://img.shields.io/badge/PyPI-pyratatui-orange?style=for-the-badge&logo=pypi&logoColor=white)](https://pypi.org/project/pyratatui/)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python&logoColor=white)](https://pypi.org/project/pyratatui/)
 ![Downloads](https://img.shields.io/pypi/dm/pyratatui?style=for-the-badge&logo=python&label=downloads)
