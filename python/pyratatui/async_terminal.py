@@ -34,9 +34,8 @@ import contextlib
 import time
 from collections.abc import AsyncIterator, Callable
 
-from ._pyratatui import Frame
+from ._pyratatui import Frame, Terminal
 from ._pyratatui import PyKeyEvent as KeyEvent
-from ._pyratatui import Terminal
 
 
 class AsyncTerminal:

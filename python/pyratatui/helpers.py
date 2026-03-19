@@ -21,10 +21,13 @@ from __future__ import annotations
 from collections.abc import Callable
 
 # Re-export Rust functions that __init__.py expects to find in this module.
-from ._pyratatui import compile_effect  # noqa: F401  (tachyonfx DSL compiler)
-from ._pyratatui import prompt_password  # noqa: F401  (blocking password prompt)
-from ._pyratatui import prompt_text  # noqa: F401  (blocking text prompt)
-from ._pyratatui import Frame, Terminal
+from ._pyratatui import (
+    Frame,
+    Terminal,
+    compile_effect,  # noqa: F401  (tachyonfx DSL compiler)
+    prompt_password,  # noqa: F401  (blocking password prompt)
+    prompt_text,  # noqa: F401  (blocking text prompt)
+)
 from .async_terminal import AsyncTerminal
 
 
