@@ -129,7 +129,7 @@ pip install pyratatui
 
 ```python
 import pyratatui
-print(pyratatui.__version__)          # "0.2.5"
+print(pyratatui.__version__)          # "0.2.6"
 print(pyratatui.__ratatui_version__)  # "0.30"
 ```
 
@@ -811,7 +811,7 @@ python main.py
 
 ```bash
 pyratatui version
-# PyRatatui 0.2.5
+# PyRatatui 0.2.6
 ```
 
 ---

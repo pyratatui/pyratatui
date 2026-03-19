@@ -100,7 +100,7 @@ readme         = "README.md"
 requires-python = ">=3.10"
 license        = {{ text = "MIT" }}
 dependencies   = [
-    "pyratatui>=0.2.5",
+    "pyratatui>=0.2.6",
 ]
 
 [project.scripts]
@@ -152,7 +152,7 @@ python main.py
 
 ## Built with
 
-- [pyratatui](https://github.com/pyratatui/pyratatui) ≥ 0.2.5
+- [pyratatui](https://github.com/pyratatui/pyratatui) ≥ 0.2.6
 - Python ≥ 3.10
 """
 

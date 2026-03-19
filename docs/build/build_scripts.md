@@ -200,7 +200,7 @@ jobs:
 
 ```python
 import pyratatui
-print(pyratatui.__version__)           # e.g. "0.2.5"
+print(pyratatui.__version__)           # e.g. "0.2.6"
 print(pyratatui.__ratatui_version__)   # "0.29"
 
 # Sanity check: run a no-display render
