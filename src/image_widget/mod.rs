@@ -34,6 +34,32 @@ impl ImagePicker {
         }
     }
 
+    /// Picker using Kitty graphics protocol (sharp, requires Kitty/Ghostty).
+    #[staticmethod]
+    pub fn kitty() -> Self {
+        use ratatui_image::picker::ProtocolType;
+        let mut p = RPicker::halfblocks();
+        p.set_protocol_type(ProtocolType::Kitty);
+        Self { inner: p }
+    }
+
+    /// Picker using Sixel graphics protocol.
+    #[staticmethod]
+    pub fn sixel() -> Self {
+        use ratatui_image::picker::ProtocolType;
+        let mut p = RPicker::halfblocks();
+        p.set_protocol_type(ProtocolType::Sixel);
+        Self { inner: p }
+    }
+
+    /// Auto-detect best protocol by querying the terminal.
+    #[staticmethod]
+    pub fn from_query() -> PyResult<Self> {
+        RPicker::from_query_stdio()
+            .map(|inner| Self { inner })
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))
+    }
+
     /// Picker with explicit character-cell pixel dimensions.
     #[staticmethod]
     #[allow(deprecated)]
@@ -49,7 +75,6 @@ impl ImagePicker {
             .map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?
             .decode()
             .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
-
         let protocol = self.inner.new_resize_protocol(dyn_img);
         Ok(ImageState {
             protocol,
