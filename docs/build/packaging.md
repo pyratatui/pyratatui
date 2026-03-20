@@ -56,7 +56,7 @@ pyratatui uses the version from `Cargo.toml`:
 ```toml
 [package]
 name = "pyratatui"
-version = "0.2.6"
+version = "0.2.7"
 ```
 
 Maturin automatically syncs this to the Python package version. Always bump `Cargo.toml` before releasing.
@@ -101,14 +101,14 @@ The GitHub Actions workflow at `.github/workflows/gendocs.yml` demonstrates the 
 Maturin produces wheels with names like:
 
 ```
-pyratatui-0.2.6-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+pyratatui-0.2.7-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 ```
 
 Breakdown:
 
 | Segment | Meaning |
 |---|---|
-| `pyratatui-0.2.6` | Package name and version |
+| `pyratatui-0.2.7` | Package name and version |
 | `cp311-cp311` | CPython 3.11 (ABI tag) |
 | `manylinux_2_17_x86_64` | Linux platform tag |
 

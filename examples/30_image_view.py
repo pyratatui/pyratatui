@@ -2,13 +2,14 @@
 """
 30_image_view.py — ratatui-image: display an image in the terminal
 
-Loads an image file (PNG/JPEG) and displays it using unicode halfblocks.
+Loads an image file (PNG/JPEG) and displays it using the best available
+terminal graphics protocol (kitty, sixel, iTerm2, or unicode halfblocks).
 
 Usage:
     python 30_image_view.py [image_path]
 
 Default image:
-    gallery/pyratatui.png
+    ../gallery/pyratatui.png
 
 Press 'q' to quit.
 """
@@ -34,23 +35,26 @@ from pyratatui import (
 
 def main():
     # Determine image path
-    image_path = sys.argv[1] if len(sys.argv) > 1 else "gallery/alacritty.png"
+    image_path = sys.argv[1] if len(sys.argv) > 1 else "../gallery/alacritty.png"
 
     if not os.path.exists(image_path):
         print(f"Error: file {image_path!r} not found", file=sys.stderr)
         sys.exit(1)
 
-    picker = ImagePicker.halfblocks()
-
-    try:
-        state = picker.load(image_path)
-    except OSError as e:
-        print(f"Failed to load image: {e}", file=sys.stderr)
-        sys.exit(1)
-
-    widget = ImageWidget()
-
     with Terminal() as term:
+        try:
+            picker = ImagePicker.from_query()
+        except RuntimeError:
+            picker = ImagePicker.halfblocks()
+
+        try:
+            state = picker.load(image_path)
+        except OSError as e:
+            print(f"Failed to load image: {e}", file=sys.stderr)
+            return
+
+        widget = ImageWidget()
+
         while True:
 
             def ui(frame, _w=widget, _s=state, _path=image_path):

@@ -43,6 +43,15 @@ impl ImagePicker {
         Self { inner: p }
     }
 
+    /// Picker using iTerm2 inline images protocol.
+    #[staticmethod]
+    pub fn iterm2() -> Self {
+        use ratatui_image::picker::ProtocolType;
+        let mut p = RPicker::halfblocks();
+        p.set_protocol_type(ProtocolType::Iterm2);
+        Self { inner: p }
+    }
+
     /// Picker using Sixel graphics protocol.
     #[staticmethod]
     pub fn sixel() -> Self {

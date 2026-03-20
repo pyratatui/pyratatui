@@ -11,10 +11,10 @@ so you can import from either location:
 from __future__ import annotations
 
 # Also expose native Rust widgets that have no Python wrapper
+from .._pyratatui import BarGraph  # noqa: F401
 from .._pyratatui import (
     BarChart,
     BarColorMode,
-    BarGraph,  # noqa: F401
     BarGraphStyle,
     Block,
     BorderType,

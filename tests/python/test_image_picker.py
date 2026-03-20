@@ -6,6 +6,7 @@ import tempfile
 import zlib
 
 import pytest
+
 from pyratatui import ImagePicker, ImageState, ImageWidget
 
 
@@ -128,4 +129,3 @@ class TestImageWidget:
 
     def test_repr(self):
         assert repr(ImageWidget()) == "ImageWidget"
-        

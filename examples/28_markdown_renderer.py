@@ -51,7 +51,7 @@ Convert Markdown → `Text` for terminal rendering (*this very demo!*).
 Real-time log viewer widget with level filtering.
 
 ### ratatui-image
-Display images using sixel, kitty, or unicode halfblock protocols.
+Display images using sixel, kitty, iTerm2, or unicode halfblock protocols.
 
 ## Installation
 

@@ -17,7 +17,7 @@ Entrypoint encoding
 
 Backward compatibility
 ----------------------
-Metadata written by v0.2.6 and earlier stored bare strings like ``"__main__"``
+Metadata written by v0.2.7 and earlier stored bare strings like ``"__main__"``
 or ``"myapp.main"``.  ``parse_entrypoint`` handles those transparently:
 
     "__main__"   → ("script", "main.py")
@@ -169,7 +169,7 @@ def parse_entrypoint(entrypoint: str) -> tuple[str, str]:
     ``kind``   is ``"script"`` or ``"module"``.
     ``target`` is the script filename or the dotted module name.
 
-    Handles legacy bare strings written by v0.2.6 and earlier::
+    Handles legacy bare strings written by v0.2.7 and earlier::
 
         "__main__"       → ("script", "main.py")
         "myapp"          → ("module", "myapp")

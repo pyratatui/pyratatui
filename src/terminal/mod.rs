@@ -395,7 +395,9 @@ impl Frame {
         area: &Rect,
         mut state: PyRefMut<'_, PyImageState>,
     ) {
-        let img = ratatui_image::StatefulImage::default();
+        let img = ratatui_image::StatefulImage::default().resize(ratatui_image::Resize::Fit(Some(
+            image::imageops::FilterType::Lanczos3,
+        )));
         self.get()
             .render_stateful_widget(img, area.inner, &mut state.protocol);
     }

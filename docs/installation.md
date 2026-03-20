@@ -70,7 +70,7 @@ maturin develop --release   # installs into the current virtualenv
 
 ```python
 import pyratatui
-print(pyratatui.__version__)           # "0.2.6"
+print(pyratatui.__version__)           # "0.2.7"
 print(pyratatui.__ratatui_version__)   # "0.30"
 ```
 
@@ -123,6 +123,16 @@ Any modern terminal emulator works. Verify true-colour support with:
 ```bash
 echo $COLORTERM   # should be "truecolor" or "24bit"
 ```
+
+---
+
+### Image Protocols (Quality)
+
+For the highest-fidelity image rendering, use a terminal that supports one of
+the pixel protocols (Kitty graphics, iTerm2 inline images, or Sixel). The
+Unicode half-block fallback works everywhere but is lower fidelity.
+
+Use `ImagePicker.from_query()` to auto-detect the best protocol and cell size.
 
 ---
 

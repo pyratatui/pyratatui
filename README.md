@@ -129,7 +129,7 @@ pip install pyratatui
 
 ```python
 import pyratatui
-print(pyratatui.__version__)          # "0.2.6"
+print(pyratatui.__version__)          # "0.2.7"
 print(pyratatui.__ratatui_version__)  # "0.30"
 ```
 
@@ -482,6 +482,13 @@ run_app(ui)
 | `Checkbox` | `tui-checkbox` | Configurable checkbox widget |
 | `Chart` / `Dataset` / `Axis` | `ratatui` | Multi-dataset cartesian chart (line/scatter/bar) |
 
+#### Image Rendering
+
+`ImageWidget` supports Kitty, Sixel, iTerm2 inline images, and a Unicode
+half-block fallback. For best clarity, call `ImagePicker.from_query()` inside
+`Terminal()` to auto-detect the best protocol and cell size, and the renderer
+uses a high-quality Lanczos3 resampling filter when resizing.
+
 **Third-party widget gallery:**
 
 ```python
@@ -811,7 +818,7 @@ python main.py
 
 ```bash
 pyratatui version
-# PyRatatui 0.2.6
+# PyRatatui 0.2.7
 ```
 
 ---

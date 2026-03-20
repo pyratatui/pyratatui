@@ -1563,7 +1563,7 @@ class ImagePicker:
 
     Example::
 
-        picker = ImagePicker.halfblocks()
+        picker = ImagePicker.from_query()
         state  = picker.load("photo.png")
         frame.render_stateful_image(ImageWidget(), area, state)
     """
@@ -1572,6 +1572,8 @@ class ImagePicker:
     def halfblocks() -> ImagePicker: ...
     @staticmethod
     def kitty() -> ImagePicker: ...
+    @staticmethod
+    def iterm2() -> ImagePicker: ...
     @staticmethod
     def sixel() -> ImagePicker: ...
     @staticmethod

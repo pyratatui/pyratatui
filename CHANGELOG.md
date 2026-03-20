@@ -7,11 +7,11 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## [0.2.6] — 2026-03-14
+## [0.2.7] — 2026-03-14
 
 ### Summary
 
-`0.2.6` is a major internal reorganisation and tooling release for `pyratatui`.
+`0.2.7` is a major internal reorganisation and tooling release for `pyratatui`.
 
 The separate `pyratatui_manager` package has been fully integrated into the
 main project as the `pyratatui.manager` subpackage, providing a built-in app
@@ -263,7 +263,7 @@ to
 ### Version bump
 
 ```
-0.2.4 → 0.2.6
+0.2.4 → 0.2.7
 ```
 
 Updated in both:
