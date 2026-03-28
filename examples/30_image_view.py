@@ -9,7 +9,7 @@ Usage:
     python 30_image_view.py [image_path]
 
 Default image:
-    ../gallery/pyratatui.png
+    gallery/pyratatui.png
 
 Press 'q' to quit.
 """
@@ -35,7 +35,7 @@ from pyratatui import (
 
 def main():
     # Determine image path
-    image_path = sys.argv[1] if len(sys.argv) > 1 else "../gallery/alacritty.png"
+    image_path = sys.argv[1] if len(sys.argv) > 1 else "gallery/alacritty.png"
 
     if not os.path.exists(image_path):
         print(f"Error: file {image_path!r} not found", file=sys.stderr)
