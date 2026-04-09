@@ -42,8 +42,8 @@ use crate::textarea::TextArea as PyTextArea;
 use crate::throbber_widget::Throbber as PyThrobber;
 use crate::tree_widget::{Tree as PyTree, TreeState as PyTreeState};
 use crate::widgets::{
-    BarChart, Block, Clear, Gauge, LineGauge, List, ListState, Monthly, Paragraph, Scrollbar,
-    ScrollbarState, Sparkline, Table, TableState, Tabs,
+    BarChart, Block, Clear, Gauge, LineGauge, List, ListState, Monthly, Paragraph, RatatuiMascot,
+    Scrollbar, ScrollbarState, Sparkline, Table, TableState, Tabs,
 };
 
 // ─── KeyEvent wrapper ─────────────────────────────────────────────────────────
@@ -170,6 +170,7 @@ impl Frame {
         try_widget!(Clear, to_ratatui);
         try_widget!(Tabs, to_ratatui);
         try_widget!(Monthly, to_ratatui);
+        try_widget!(RatatuiMascot, to_ratatui);
         try_widget!(PyBarGraph, to_ratatui);
 
         if let Ok(w) = widget.extract::<PyRef<List>>() {

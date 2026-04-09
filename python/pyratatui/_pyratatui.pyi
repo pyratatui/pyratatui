@@ -389,6 +389,14 @@ class Sparkline:
 class Clear:
     def __init__(self) -> None: ...
 
+class MascotEyeColor:
+    Default: MascotEyeColor
+    Red: MascotEyeColor
+
+class RatatuiMascot:
+    def __init__(self, eye_color: MascotEyeColor | None = None) -> None: ...
+    def set_eye(self, rat_eye: MascotEyeColor) -> RatatuiMascot: ...
+
 class ScrollbarOrientation:
     VerticalRight: ScrollbarOrientation
     VerticalLeft: ScrollbarOrientation

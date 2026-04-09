@@ -4,6 +4,16 @@ All widgets follow an immutable builder pattern: every configuration method retu
 
 ---
 
+## Ratatui mascot (easter egg)
+
+```python
+from pyratatui import MascotEyeColor, RatatuiMascot
+```
+
+Renders Ratatui’s built-in mascot widget.
+
+See: `reference/mascot_widget.md`.
+
 ## Block
 
 ```python

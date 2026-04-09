@@ -88,6 +88,8 @@ __all__ = [
     "Map",
     "MapResolution",
     "Button",
+    "RatatuiMascot",
+    "MascotEyeColor",
     # ── Python-wrapped widgets ─────────────────────────────────────────────────
     "Throbber",
     "Menu",

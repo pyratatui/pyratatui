@@ -352,6 +352,7 @@ if ev:
 | `Scrollbar` + `ScrollbarState` | Attach scrollbars to any widget |
 | `Tabs` | Tabbed navigation bar |
 | `Clear` | Clears a rectangular area (use under popups) |
+| `RatatuiMascot` | Ratatui mascot widget (easter egg) |
 
 **Runnable widget gallery:**
 

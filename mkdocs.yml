@@ -84,6 +84,7 @@ nav:
       - Terminal & Frame: reference/terminal.md
       - Layout: reference/layout.md
       - Widgets: reference/widgets.md
+      - Mascot: reference/mascot_widget.md
       - Style & Text: reference/style.md
       - Effects (TachyonFX): reference/effects.md
       - Prompts: reference/prompts.md

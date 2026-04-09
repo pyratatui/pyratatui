@@ -7,6 +7,12 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- `RatatuiMascot` widget binding (with `MascotEyeColor`) + docs and example.
+
 ## [0.2.7] — 2026-03-14
 
 ### Summary

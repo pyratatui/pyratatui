@@ -12,6 +12,7 @@ mod canvas_widget;
 mod clear;
 mod gauge;
 mod list;
+mod mascot;
 mod paragraph;
 mod scrollbar;
 mod sparkline;
@@ -26,6 +27,7 @@ pub use clear::Clear;
 pub use gauge::{Gauge, LineGauge};
 #[allow(unused_imports)]
 pub use list::{List, ListDirection, ListItem, ListState};
+pub use mascot::{RatatuiMascot};
 pub use paragraph::Paragraph;
 #[allow(unused_imports)]
 pub use scrollbar::{Scrollbar, ScrollbarOrientation, ScrollbarState};
@@ -47,5 +49,6 @@ pub fn register_widgets(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()>
     tabs::register_tabs(py, m)?;
     canvas_widget::register_canvas(py, m)?;
     calendar::register_calendar(py, m)?;
+    mascot::register_mascot(py, m)?;
     Ok(())
 }
