@@ -1059,6 +1059,7 @@ python test_all_examples.py
 | 36 | `36_piechart.py` | `PieChart`, `PieData`, `PieStyle` |
 | 37 | `37_checkbox_widget.py` | `Checkbox` — checked/unchecked toggle |
 | 38 | `38_chart_widget.py` | `Chart`, `Dataset`, `Axis`, `GraphType` |
+| 39 | `39_mascot_widget.py` | `RatatuiMascot`, `MascotEyeColor` |
 
 ---
 
