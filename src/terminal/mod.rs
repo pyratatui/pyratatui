@@ -494,6 +494,8 @@ impl Terminal {
             PyRuntimeError::new_err("Terminal not initialised — use `with Terminal() as t:`")
         })?;
 
+        let mut err = None;
+
         term.draw(|frame| {
             let py_frame = Frame {
                 ptr: unsafe {
@@ -504,13 +506,19 @@ impl Terminal {
             };
             Python::attach(|py| {
                 if let Ok(obj) = Py::new(py, py_frame) {
-                    let _ = draw_fn.call1((obj,));
+                    if let Err(e) = draw_fn.call1((obj,)) {
+                        err = Some(e);
+                    }
                 }
             });
         })
         .map_err(io_err_to_py)?;
 
-        Ok(())
+        if let Some(e) = err {
+            Err(e)
+        } else {
+            Ok(())
+        }
     }
 
     // ── Events ───────────────────────────────────────────────────────────────
