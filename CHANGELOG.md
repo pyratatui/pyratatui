@@ -7,7 +7,34 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## [Unreleased]
+## [0.2.9]
+
+### Fixed
+
+* Fixed silent swallowing of Python exceptions raised inside non-`Result` drawing callbacks
+* Added propagation of `PyErr` from `FnOnce` draw delegates out of `Terminal::draw`
+* Ensured draw pipeline no longer hides runtime errors originating in Python execution context
+* Improved error visibility for debugging and prototyping in UI rendering flow
+
+### Summary
+
+This release fixes a critical visibility issue in the draw system where Python exceptions raised inside draw callbacks were previously discarded due to non-`Result` execution paths. Errors are now correctly surfaced outside the draw boundary instead of being silently ignored.
+
+### Impact
+
+* Python exceptions in draw logic are now immediately visible at call site
+* Eliminates silent failure mode in rendering pipeline
+* Improves debugging reliability for UI development and experimentation
+
+### Testing
+
+Manual verification:
+
+* Triggered Python exceptions inside `Terminal::draw`
+* Confirmed propagation of traceback outside draw context
+* Verified absence of silent failure behavior
+
+## [0.2.8]
 
 ### Added
 
